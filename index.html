@@ -51,55 +51,70 @@
             </div>
         </header>
 
-        <!-- Bento Grid Section -->
-        <section class="bento-section">
-            <div class="bento-grid">
-                
-                <!-- Bento Item 1: Large Span -->
-                <div class="bento-card bento-large scroll-reveal">
-                    <div class="bento-content">
-                        <i class="ph-fill ph-sparkle bento-icon"></i>
-                        <h2>AI Icebreakers</h2>
-                        <p>Never stare at a blank screen again. Our AI analyzes your match and generates three highly-contextual conversation starters instantly.</p>
-                    </div>
-                    <div class="bento-visual chat-visual">
+        <!-- Features Zig-Zag Section -->
+        <section class="features-section">
+            
+            <!-- Feature 1: AI Icebreakers (Text Left, Visual Right) -->
+            <div class="feature-row scroll-reveal">
+                <div class="feature-text">
+                    <div class="feature-icon"><i class="ph-fill ph-sparkle"></i></div>
+                    <h2>AI Icebreakers</h2>
+                    <p>Never stare at a blank screen again. Our AI analyzes your match and generates three highly-contextual conversation starters instantly.</p>
+                </div>
+                <div class="feature-visual">
+                    <div class="chat-mockup">
                         <div class="chat-bubble left">Hey! Love your recent campaign.</div>
-                        <div class="chat-bubble right gold-border">Let's collaborate on the next one ✨</div>
+                        <div class="chat-bubble right">Let's collaborate on the next one ✨</div>
+                        <div class="chat-bubble left">I'd love to! What's the timeline?</div>
                     </div>
+                    <div class="glow-orb"></div>
                 </div>
-
-                <!-- Bento Item 2: Square -->
-                <div class="bento-card bento-square scroll-reveal">
-                    <div class="bento-content">
-                        <i class="ph-fill ph-magnifying-glass-plus bento-icon"></i>
-                        <h2>Concierge Discovery</h2>
-                        <p>Get a curated shortlist of high-intent candidates based on your specific campaign needs.</p>
-                    </div>
-                </div>
-
-                <!-- Bento Item 3: Square -->
-                <div class="bento-card bento-square scroll-reveal">
-                    <div class="bento-content">
-                        <i class="ph-fill ph-handshake bento-icon"></i>
-                        <h2>Smart Proposals</h2>
-                        <p>Lock in scope, price, and deliverables without ever leaving the chat interface.</p>
-                    </div>
-                </div>
-
-                <!-- Bento Item 4: Long Row -->
-                <div class="bento-card bento-row scroll-reveal gold-card">
-                    <div class="bento-content row-layout">
-                        <div class="row-text">
-                            <h2>Ping Premium <i class="ph-fill ph-crown"></i></h2>
-                            <p>Unlock priority placement, unlimited AI insights, and see who liked you instantly.</p>
-                        </div>
-                        <div class="row-cta">
-                            <button class="btn-secondary magnetic trigger-modal">Join Waitlist</button>
-                        </div>
-                    </div>
-                </div>
-
             </div>
+
+            <!-- Feature 2: Concierge Discovery (Visual Left, Text Right) -->
+            <div class="feature-row reverse scroll-reveal">
+                <div class="feature-visual">
+                    <div class="card-mockup">
+                        <img src="./assets/images/mockup-home.png" alt="Profile Match">
+                        <div class="match-badge">95% Match</div>
+                    </div>
+                    <div class="glow-orb"></div>
+                </div>
+                <div class="feature-text">
+                    <div class="feature-icon"><i class="ph-fill ph-magnifying-glass-plus"></i></div>
+                    <h2>Concierge Discovery</h2>
+                    <p>Get a curated shortlist of high-intent candidates based on your specific campaign needs. Stop swiping mindlessly.</p>
+                </div>
+            </div>
+
+            <!-- Feature 3: Smart Proposals (Text Left, Visual Right) -->
+            <div class="feature-row scroll-reveal">
+                <div class="feature-text">
+                    <div class="feature-icon"><i class="ph-fill ph-handshake"></i></div>
+                    <h2>Smart Proposals</h2>
+                    <p>Lock in scope, price, and deliverables without ever leaving the chat interface. Generate legally binding contracts in seconds.</p>
+                </div>
+                <div class="feature-visual">
+                    <div class="proposal-mockup">
+                        <div class="proposal-header">Partnership Agreement</div>
+                        <div class="proposal-line"></div>
+                        <div class="proposal-line short"></div>
+                        <div class="proposal-price">$5,000</div>
+                        <button class="btn-primary" style="width:100%; margin-top:16px;">Sign & Accept</button>
+                    </div>
+                    <div class="glow-orb"></div>
+                </div>
+            </div>
+
+            <!-- Premium Banner -->
+            <div class="premium-banner scroll-reveal">
+                <div class="premium-text">
+                    <h2>Ping Premium <i class="ph-fill ph-crown" style="color:var(--gold);"></i></h2>
+                    <p>Unlock priority placement, unlimited AI insights, and see who liked you instantly.</p>
+                </div>
+                <button class="btn-secondary magnetic trigger-modal">Join Waitlist</button>
+            </div>
+
         </section>
 
         <!-- Minimal Footer -->

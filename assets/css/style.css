@@ -144,84 +144,96 @@ a { text-decoration: none; color: inherit; }
     gap: 16px;
 }
 
-/* Bento Grid */
-.bento-section {
+/* Features Zig-Zag Layout */
+.features-section {
     padding: 80px 0 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 160px;
 }
-.bento-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: auto auto;
-    gap: 24px;
+.feature-row {
+    display: flex;
+    align-items: center;
+    gap: 80px;
 }
-.bento-card {
+.feature-row.reverse {
+    flex-direction: row-reverse;
+}
+.feature-text {
+    flex: 1;
+}
+.feature-icon {
+    width: 64px; height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #1a1a1a 0%, #050505 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: var(--gold);
+    margin-bottom: 32px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.feature-text h2 {
+    font-family: var(--font-heading);
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-bottom: 24px;
+}
+.feature-text p {
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1.6;
+    max-width: 500px;
+}
+
+/* Feature Visuals */
+.feature-visual {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+}
+.glow-orb {
+    position: absolute;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,215,0,0.08) 0%, transparent 70%);
+    filter: blur(40px);
+    z-index: -1;
+}
+.chat-mockup, .card-mockup, .proposal-mockup {
     background: linear-gradient(145deg, #0f0f0f 0%, #050505 100%);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-top: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 2px 20px rgba(255, 255, 255, 0.02), 0 10px 40px rgba(0, 0, 0, 0.5);
     border-radius: 32px;
-    padding: 56px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
-    position: relative;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    transform: rotateY(-10deg) rotateX(5deg);
+    transition: transform 0.5s ease;
 }
-.bento-card:hover { 
-    border-color: rgba(255, 215, 0, 0.15);
-    border-top-color: rgba(255, 215, 0, 0.4);
-    box-shadow: inset 0 2px 20px rgba(255, 215, 0, 0.05), 0 20px 40px rgba(0, 0, 0, 0.8);
-    transform: translateY(-4px);
+.feature-row.reverse .chat-mockup, 
+.feature-row.reverse .card-mockup, 
+.feature-row.reverse .proposal-mockup {
+    transform: rotateY(10deg) rotateX(5deg);
 }
-
-.bento-large {
-    grid-column: span 2;
-    flex-direction: row;
-    align-items: center;
-    gap: 48px;
-}
-.bento-square {
-    grid-column: span 1;
-}
-.bento-row {
-    grid-column: span 3;
-    background: linear-gradient(135deg, #1A1700 0%, #0a0a0a 100%);
-    border-color: rgba(255,215,0,0.15);
-    border-top-color: rgba(255,215,0,0.3);
+.feature-visual:hover .chat-mockup,
+.feature-visual:hover .card-mockup,
+.feature-visual:hover .proposal-mockup {
+    transform: rotateY(0) rotateX(0) translateY(-10px);
 }
 
-.bento-icon {
-    font-size: 40px;
-    color: var(--gold);
-    margin-bottom: 24px;
-}
-.bento-content h2 {
-    font-family: var(--font-heading);
-    font-size: 32px;
-    font-weight: 600;
-    letter-spacing: -1px;
-    margin-bottom: 16px;
-}
-.bento-content p {
-    color: var(--text-muted);
-    font-size: 16px;
-}
-
-/* Specific Bento Visuals */
-.chat-visual {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
+/* Chat Mockup Styles */
+.chat-mockup { display: flex; flex-direction: column; gap: 16px; }
 .chat-bubble {
-    padding: 18px 24px;
+    padding: 16px 20px;
     border-radius: 24px;
-    font-size: 15px;
+    font-size: 14px;
     max-width: 85%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    line-height: 1.5;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 .chat-bubble.left {
     background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
@@ -238,16 +250,43 @@ a { text-decoration: none; color: inherit; }
     border-bottom-right-radius: 6px;
     color: var(--text-main);
 }
-.gold-border { /* Handled natively by right bubble now */ }
 
-.row-layout {
+/* Card Mockup Styles */
+.card-mockup { position: relative; padding: 16px; }
+.card-mockup img { width: 100%; border-radius: 20px; }
+.match-badge {
+    position: absolute;
+    top: 32px; right: 32px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* Proposal Mockup Styles */
+.proposal-header { font-family: var(--font-heading); font-size: 20px; margin-bottom: 24px; text-align: center; }
+.proposal-line { height: 8px; background: #222; border-radius: 4px; margin-bottom: 12px; }
+.proposal-line.short { width: 60%; margin-bottom: 32px; }
+.proposal-price { font-family: var(--font-heading); font-size: 40px; color: var(--gold); text-align: center; font-weight: 700; }
+
+/* Premium Banner */
+.premium-banner {
+    background: linear-gradient(135deg, #1A1700 0%, #0a0a0a 100%);
+    border: 1px solid rgba(255,215,0,0.15);
+    border-top: 1px solid rgba(255,215,0,0.4);
+    border-radius: 32px;
+    padding: 64px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    box-shadow: inset 0 2px 20px rgba(255, 215, 0, 0.05), 0 20px 40px rgba(0, 0, 0, 0.5);
 }
-.row-text { max-width: 600px; }
-.row-text h2 i { margin-left: 12px; font-size: 28px; }
+.premium-text h2 { font-family: var(--font-heading); font-size: 40px; margin-bottom: 12px; letter-spacing: -1px; }
+.premium-text p { color: var(--text-muted); font-size: 18px; max-width: 500px; }
 
 /* Footer */
 .footer {
