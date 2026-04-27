@@ -18,12 +18,15 @@
 </head>
 <body>
     
+    <!-- Custom Cursor -->
+    <div class="custom-cursor"></div>
+
     <nav class="nav">
         <div class="nav-brand">
             <i class="ph-fill ph-lightning"></i> Ping
         </div>
         <div class="nav-cta">
-            <a href="#" class="btn-primary magnetic">Get the App</a>
+            <button class="btn-primary magnetic trigger-modal">Join Waitlist</button>
         </div>
     </nav>
 
@@ -39,12 +42,12 @@
                 Stop swiping blindly. Ping uses AI-driven concierge discovery to connect you with the highest-intent collaborations on the market.
             </p>
             <div class="hero-buttons">
-                <a href="#" class="btn-store magnetic">
-                    <i class="ph-fill ph-apple-logo"></i> Download for iOS
-                </a>
-                <a href="#" class="btn-store magnetic">
-                    <i class="ph-fill ph-google-play-logo"></i> Download for Android
-                </a>
+                <button class="btn-store magnetic trigger-modal">
+                    <i class="ph-fill ph-apple-logo"></i> iOS Waitlist
+                </button>
+                <button class="btn-store magnetic trigger-modal">
+                    <i class="ph-fill ph-google-play-logo"></i> Android Waitlist
+                </button>
             </div>
         </header>
 
@@ -91,7 +94,7 @@
                             <p>Unlock priority placement, unlimited AI insights, and see who liked you instantly.</p>
                         </div>
                         <div class="row-cta">
-                            <a href="#" class="btn-secondary magnetic">Learn More</a>
+                            <button class="btn-secondary magnetic trigger-modal">Join Waitlist</button>
                         </div>
                     </div>
                 </div>
@@ -103,12 +106,12 @@
         <footer class="footer scroll-reveal">
             <h2 class="footer-title">READY TO CONQUER?</h2>
             <div class="hero-buttons">
-                <a href="#" class="btn-store magnetic">
+                <button class="btn-store magnetic trigger-modal">
                     <i class="ph-fill ph-apple-logo"></i> iOS
-                </a>
-                <a href="#" class="btn-store magnetic">
+                </button>
+                <button class="btn-store magnetic trigger-modal">
                     <i class="ph-fill ph-google-play-logo"></i> Android
-                </a>
+                </button>
             </div>
             <div class="footer-links">
                 <span>© 2026 ReachUp Media</span>
@@ -118,6 +121,30 @@
             </div>
         </footer>
     </main>
+
+    <!-- Waitlist Modal -->
+    <div class="modal-overlay" id="waitlistModal">
+        <div class="modal-content">
+            <button class="modal-close"><i class="ph ph-x"></i></button>
+            <div class="modal-header">
+                <i class="ph-fill ph-lock-key modal-icon"></i>
+                <h2>Exclusive Access</h2>
+                <p>Ping is currently invite-only. Join the waitlist to secure your priority placement.</p>
+            </div>
+            <form class="waitlist-form" id="waitlistForm">
+                <div class="input-group">
+                    <i class="ph ph-envelope-simple"></i>
+                    <input type="email" placeholder="Enter your best email" required>
+                </div>
+                <button type="submit" class="btn-primary modal-submit magnetic">Secure My Spot</button>
+            </form>
+            <div class="success-message" id="successMessage" style="display: none;">
+                <i class="ph-fill ph-check-circle"></i>
+                <h3>You're on the list.</h3>
+                <p>Keep an eye on your inbox for the VIP invite.</p>
+            </div>
+        </div>
+    </div>
 
     <script src="./assets/js/main.js"></script>
 </body>

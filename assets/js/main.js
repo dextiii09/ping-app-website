@@ -45,5 +45,67 @@ document.addEventListener('DOMContentLoaded', () => {
         const hero = document.querySelector('.hero');
         if (hero) hero.classList.add('visible');
     }, 100);
+    // 4. Custom Cursor Logic
+    const cursor = document.querySelector('.custom-cursor');
+    if (cursor) {
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        // Add hover effect to interactive elements
+        document.querySelectorAll('a, button, .bento-card').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
+    }
+
+    // 5. Waitlist Modal Logic
+    const modal = document.getElementById('waitlistModal');
+    const closeBtn = document.querySelector('.modal-close');
+    const triggerBtns = document.querySelectorAll('.trigger-modal');
+    const form = document.getElementById('waitlistForm');
+    const successMsg = document.getElementById('successMessage');
+
+    if (modal) {
+        // Open modal
+        triggerBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                modal.classList.add('active');
+            });
+        });
+
+        // Close modal (X button)
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                form.style.display = 'flex';
+                successMsg.style.display = 'none';
+                form.reset();
+            }, 400); // Reset form after transition
+        });
+
+        // Close modal (Click outside)
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+
+        // Handle Form Submit
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            // Simulate API call
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Securing...';
+            
+            setTimeout(() => {
+                form.style.display = 'none';
+                successMsg.style.display = 'block';
+                submitBtn.textContent = 'Secure My Spot';
+            }, 1000);
+        });
+    }
 
 });

@@ -288,3 +288,107 @@ a { text-decoration: none; color: inherit; }
     opacity: 1;
     transform: translateY(0) scale(1);
 }
+
+/* Custom Cursor */
+.custom-cursor {
+    width: 12px;
+    height: 12px;
+    background: var(--gold);
+    border-radius: 50%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s, background 0.2s;
+    mix-blend-mode: difference;
+}
+body:hover .custom-cursor {
+    opacity: 1;
+}
+.custom-cursor.hovered {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 215, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+/* Waitlist Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 48px;
+    border-radius: 24px;
+    max-width: 480px;
+    width: 90%;
+    position: relative;
+    transform: translateY(40px);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+.modal-close {
+    position: absolute;
+    top: 24px; right: 24px;
+    background: none; border: none;
+    color: var(--text-muted);
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.modal-close:hover { color: var(--text-main); }
+.modal-header { text-align: center; margin-bottom: 32px; }
+.modal-icon { font-size: 48px; color: var(--gold); margin-bottom: 16px; }
+.modal-header h2 { font-family: var(--font-heading); font-size: 28px; margin-bottom: 8px; }
+.modal-header p { color: var(--text-muted); font-size: 15px; }
+
+.waitlist-form { display: flex; flex-direction: column; gap: 16px; }
+.input-group {
+    position: relative;
+    display: flex; align-items: center;
+}
+.input-group i {
+    position: absolute; left: 16px; color: var(--text-muted); font-size: 20px;
+}
+.input-group input {
+    width: 100%;
+    padding: 16px 16px 16px 48px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 16px;
+    font-family: var(--font-body);
+    transition: border-color 0.3s;
+}
+.input-group input:focus { outline: none; border-color: var(--gold); }
+.modal-submit { width: 100%; padding: 16px; font-size: 16px; }
+
+.success-message {
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+}
+.success-message i { font-size: 64px; color: #4CAF50; margin-bottom: 16px; }
+.success-message h3 { font-family: var(--font-heading); font-size: 24px; margin-bottom: 8px; }
+.success-message p { color: var(--text-muted); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
