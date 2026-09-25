@@ -1,6 +1,7 @@
 // Ping Platform - Deal Room: chat with matches and exchange Smart Proposals.
-// Proposals are a written record of what was agreed; there is no in-app
-// signing, escrow or payment (not built - see project notes).
+// Proposals are a written record of what was agreed: the person a proposal is
+// sent to can accept or decline it. There is no in-app signing, escrow or
+// payment; payment is arranged between the two sides.
 import { store } from '../state.js';
 import { aiService } from '../aiService.js';
 import { escapeHtml } from '../domUtils.js';
@@ -17,10 +18,12 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
   let lastIcebreakerKey = null;
 
   function buildTranscript(match) {
-    const messages = (match?.messages || []).filter(m => m.type === 'text' || m.type === 'proposal');
+    const messages = (match?.messages || []).filter(m => m.type === 'text' || m.type === 'proposal' || m.type === 'system');
     if (messages.length === 0) return '';
     const otherName = match.otherUser?.name || 'them';
     return messages.slice(-8).map(m => {
+      // The campaign note ("Selected for ...") gives the suggestions context.
+      if (m.type === 'system') return `[${m.text}]`;
       const speaker = m.senderId === store.currentUser.id ? 'Me' : otherName;
       if (m.type === 'proposal' && m.proposalData) {
         return `${speaker}: [Sent a Smart Proposal: "${m.proposalData.title}" for ${m.proposalData.price}]`;
@@ -29,7 +32,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
     }).join('\n');
   }
 
-  // Real-schema messages live in a Firestore subcollection - subscribing is
+  // Real messages come from Supabase with a live subscription - subscribing is
   // fire-and-forget (state.js dedups by matchId); the store.subscribe() call
   // below re-renders this view whenever the live snapshot delivers an update.
   function ensureMessagesLoaded(match) {
@@ -86,11 +89,18 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
         <div class="app-empty">
           <div class="app-empty-icon"><i class="ph-fill ph-chats-circle"></i></div>
           <h2>No conversations <em>yet</em></h2>
-          <p>When you and someone else ping each other, it's a match and your private Deal Room opens here.</p>
-          <div class="app-empty-actions">
-            <button class="btn-gold" data-goto="explore"><i class="ph-bold ph-compass"></i> Find matches</button>
-            <button class="btn-glass" data-goto="briefs">Browse campaign briefs</button>
-          </div>
+          ${store.currentUser.role === 'BUSINESS' ? `
+            <p>When you pick someone for a campaign, your chat with them opens here straight away.</p>
+            <div class="app-empty-actions">
+              <button class="btn-gold" data-goto="campaigns"><i class="ph-bold ph-megaphone-simple"></i> Go to campaigns</button>
+            </div>
+          ` : `
+            <p>When a brand picks you for a campaign, your chat with them opens here straight away.</p>
+            <div class="app-empty-actions">
+              <button class="btn-gold" data-goto="discover"><i class="ph-bold ph-compass"></i> Browse briefs</button>
+              <button class="btn-glass" data-goto="applications">My applications</button>
+            </div>
+          `}
         </div>
       `;
       container.querySelectorAll('[data-goto]').forEach((b) => {
@@ -248,6 +258,17 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
   function renderMessageItem(msg, match) {
     const isMine = msg.senderId === store.currentUser.id;
 
+    // The note that opens a campaign chat ("Selected for ...").
+    if (msg.type === 'system') {
+      return `
+        <div class="deal-system">
+          <i class="ph-fill ph-megaphone-simple"></i>
+          <span>${escapeHtml(msg.text)}</span>
+          ${msg.timestamp ? `<time>${formatTime(msg.timestamp)}</time>` : ''}
+        </div>
+      `;
+    }
+
     if (msg.type === 'proposal' && msg.proposalData) {
       const prop = msg.proposalData;
       const status = prop.status || 'PENDING';
@@ -265,6 +286,13 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
             <div><span>Deadline</span><b>${escapeHtml(prop.deadline)}</b></div>
           </div>
           ${prop.description ? `<p>${escapeHtml(prop.description)}</p>` : ''}
+          ${!isMine && status === 'PENDING' ? `
+            <div class="deal-proposal-actions">
+              <button class="btn-glass" data-prop-reply="DECLINED" data-msg="${escapeHtml(msg.id)}">Decline</button>
+              <button class="btn-gold" data-prop-reply="ACCEPTED" data-msg="${escapeHtml(msg.id)}"><i class="ph-bold ph-check"></i> Accept</button>
+            </div>
+            <p class="deal-proposal-hint">Accepting records that you both agree to these terms. Payment is arranged between you, outside Ping.</p>
+          ` : ''}
           <div class="deal-proposal-foot">${from}${msg.timestamp ? ` · ${formatTime(msg.timestamp)}` : ''}</div>
         </div>
       `;
@@ -356,6 +384,29 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
       };
     }
 
+    // Accept / decline a proposal sent to you
+    container.querySelectorAll('[data-prop-reply]').forEach(btn => {
+      btn.onclick = async () => {
+        const response = btn.getAttribute('data-prop-reply');
+        const accept = response === 'ACCEPTED';
+        if (!confirm(accept
+          ? 'Accept this proposal? It records that you both agree to these terms.'
+          : 'Decline this proposal? You can still keep chatting.')) return;
+        const buttons = btn.closest('.deal-proposal-actions').querySelectorAll('button');
+        buttons.forEach(b => { b.disabled = true; });
+        try {
+          const status = await store.respondToProposal(activeMatch.id, btn.getAttribute('data-msg'), response);
+          onShowToast(status === 'ACCEPTED' ? 'Proposal accepted. It\'s in writing now.' : status === 'DECLINED' ? 'Proposal declined.' : 'This proposal was already answered.');
+          await render();
+          scrollToBottom();
+        } catch (err) {
+          console.error('Proposal reply failed:', err);
+          buttons.forEach(b => { b.disabled = false; });
+          onShowToast("That didn't save. Check your connection and try again.");
+        }
+      };
+    });
+
     // Smart Proposal Modal
     const btnOpenProp = container.querySelector('#btnOpenProposalDrawer');
     const modalProp = container.querySelector('#modalCreateProposal');
@@ -435,7 +486,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
 
   render();
 
-  // Live matches/messages arrive via a Firestore subscription in state.js,
+  // Live matches/messages arrive via a Supabase subscription in state.js,
   // which calls store.notify() - re-render this view whenever that happens
   // so a new match or an incoming message shows up without a manual refresh.
   const unsubscribeStore = store.subscribe(() => { render(); });

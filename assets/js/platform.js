@@ -1,7 +1,8 @@
 // Ping Platform — Master Application Controller
 import { store } from './state.js';
-import { renderDiscoveryPlatform } from './views/discoveryPlatform.js';
-import { renderBriefsPlatform } from './views/briefsPlatform.js';
+import { renderCampaignsPlatform } from './views/campaignsPlatform.js';
+import { renderOpportunitiesPlatform } from './views/opportunitiesPlatform.js';
+import { renderApplicationsPlatform } from './views/applicationsPlatform.js';
 import { renderDealRoomPlatform } from './views/dealRoomPlatform.js';
 import { renderMediaKitPlatform } from './views/mediaKitPlatform.js';
 import { renderOpsPlatform } from './views/opsPlatform.js';
@@ -10,7 +11,10 @@ import { initCustomSelects } from './customSelect.js';
 
 class PingPlatform {
   constructor() {
-    this.currentView = 'explore'; // 'explore' | 'briefs' | 'dealroom' | 'mediakit' | 'ops'
+    // Brands: 'campaigns' | 'dealroom' | 'mediakit'
+    // Talent: 'discover' | 'applications' | 'dealroom' | 'mediakit'
+    // Admin:  'ops'
+    this.currentView = null;
     this.activeDealId = null;
     this.activeBriefId = null;
     this.viewportEl = document.getElementById('platformViewport');
@@ -20,18 +24,20 @@ class PingPlatform {
     this.isNotifsOpen = false;
     this.isSettingsOpen = false;
     // A render*Platform function may return a cleanup callback (e.g. to
-    // unsubscribe a live Firestore listener); switchView calls it before
+    // unsubscribe a live Supabase listener); switchView calls it before
     // mounting the next view so listeners don't pile up across navigation.
     this.currentViewCleanup = null;
   }
 
+  // Where each role lands: brands on their campaigns, talent on open briefs,
+  // the admin on Operations (oversight, not dealmaking).
+  homeView(role = store.currentUser.role) {
+    if (role === 'ADMIN') return 'ops';
+    return role === 'BUSINESS' ? 'campaigns' : 'discover';
+  }
+
   init() {
-    // Admin's job is oversight (verification, broadcasts, member/dispute
-    // management), not swiping/pitching/dealmaking - land them straight on
-    // Operations rather than a discovery deck meant for creators/brands.
-    if (store.currentUser.role === 'ADMIN') {
-      this.currentView = 'ops';
-    }
+    this.currentView = this.homeView();
 
     this.renderHeader();
     this.renderModals();
@@ -40,6 +46,15 @@ class PingPlatform {
     // Reactive store updates
     store.subscribe(() => {
       this.renderHeader();
+    });
+
+    // A click anywhere outside the notifications panel closes it. Added once
+    // here, since the header is redrawn on every store update.
+    document.addEventListener('click', (e) => {
+      const flyout = this.headerEl && this.headerEl.querySelector('#platformNotifsFlyout');
+      if (!flyout || flyout.contains(e.target) || e.target.closest('#btnOpenNotifsDrawer')) return;
+      this.isNotifsOpen = false;
+      flyout.classList.remove('active');
     });
 
     this.checkBroadcasts();
@@ -61,6 +76,8 @@ class PingPlatform {
     if (type === 'match') return 'ph-lightning';
     if (type === 'message') return 'ph-chat-circle-text';
     if (type === 'tip') return 'ph-sparkle';
+    if (type === 'announcement') return 'ph-megaphone';
+    if (type === 'system') return 'ph-briefcase'; // campaign updates
     return 'ph-bell';
   }
 
@@ -81,6 +98,7 @@ class PingPlatform {
     const user = store.currentUser;
     const matches = store.getMatchesForCurrentUser();
     const pendingVerifications = store.users.filter(u => !u.isDemo && u.verificationStatus === 'PENDING').length;
+    const toReview = user.role === 'BUSINESS' ? store.pendingApplicantsCount() : 0;
     const notifications = store.notifications || [];
     const unreadCount = notifications.filter(n => !n.read).length;
     const blockedUsers = store.getBlockedUsers ? store.getBlockedUsers() : [];
@@ -102,15 +120,32 @@ class PingPlatform {
             <span>Operations</span>
             ${pendingVerifications > 0 ? `<span class="nav-badge">${pendingVerifications}</span>` : ''}
           </button>
-        ` : `
-          <button class="nav-pill-btn ${this.currentView === 'explore' ? 'active' : ''}" data-view="explore" title="Explore & Match">
-            <i class="ph-fill ph-compass"></i>
-            <span>Explore & Match</span>
+        ` : user.role === 'BUSINESS' ? `
+          <button class="nav-pill-btn ${this.currentView === 'campaigns' ? 'active' : ''}" data-view="campaigns" title="Campaigns">
+            <i class="ph-fill ph-megaphone-simple"></i>
+            <span>Campaigns</span>
+            ${toReview > 0 ? `<span class="nav-badge">${toReview}</span>` : ''}
           </button>
 
-          <button class="nav-pill-btn ${this.currentView === 'briefs' ? 'active' : ''}" data-view="briefs" title="Campaign Briefs">
-            <i class="ph-fill ph-megaphone-simple"></i>
-            <span>Campaign Briefs</span>
+          <button class="nav-pill-btn ${this.currentView === 'dealroom' ? 'active' : ''}" data-view="dealroom" title="Deal Room">
+            <i class="ph-fill ph-handshake"></i>
+            <span>Deal Room</span>
+            ${matches.length > 0 ? `<span class="nav-badge">${matches.length}</span>` : ''}
+          </button>
+
+          <button class="nav-pill-btn ${this.currentView === 'mediakit' ? 'active' : ''}" data-view="mediakit" title="Profile">
+            <i class="ph-fill ph-storefront"></i>
+            <span>Profile</span>
+          </button>
+        ` : `
+          <button class="nav-pill-btn ${this.currentView === 'discover' ? 'active' : ''}" data-view="discover" title="Discover briefs">
+            <i class="ph-fill ph-compass"></i>
+            <span>Discover</span>
+          </button>
+
+          <button class="nav-pill-btn ${this.currentView === 'applications' ? 'active' : ''}" data-view="applications" title="My applications">
+            <i class="ph-fill ph-paper-plane-tilt"></i>
+            <span>Applications</span>
           </button>
 
           <button class="nav-pill-btn ${this.currentView === 'dealroom' ? 'active' : ''}" data-view="dealroom" title="Deal Room">
@@ -191,7 +226,7 @@ class PingPlatform {
 
     // Logo click -> explore
     const logo = this.headerEl.querySelector('#btnBrandLogoHome');
-    if (logo) logo.onclick = () => this.switchView(store.currentUser.role === 'ADMIN' ? 'ops' : 'explore');
+    if (logo) logo.onclick = () => this.switchView(this.homeView());
 
     // Notifications flyout
     const btnNotifs = this.headerEl.querySelector('#btnOpenNotifsDrawer');
@@ -202,28 +237,24 @@ class PingPlatform {
         this.isNotifsOpen = !this.isNotifsOpen;
         flyout.classList.toggle('active', this.isNotifsOpen);
         // Clears the unread badge the moment the panel is opened, same as
-        // most real notification centers - it's a genuine Firestore write
-        // now (see notificationService.js), not just a local counter reset.
+        // most real notification centers - it's a real database write for
+        // real accounts (see notificationService.js), not just a local reset.
         if (this.isNotifsOpen) store.markNotificationsRead();
       };
     }
-
-    document.addEventListener('click', (e) => {
-      if (flyout && !flyout.contains(e.target) && e.target !== btnNotifs) {
-        this.isNotifsOpen = false;
-        flyout.classList.remove('active');
-      }
-    });
 
     this.headerEl.querySelectorAll('.notif-item').forEach(item => {
       item.onclick = () => {
         this.isNotifsOpen = false;
         flyout.classList.remove('active');
-        // Real notifications don't carry a specific matchId (firestore.rules'
-        // validNotification() only allows type/title/text/timestamp/read) -
-        // both match and message notifications are Deal Room activity, so
-        // that's the sensible single destination rather than a dead link.
-        this.switchView('dealroom');
+        // Notifications don't carry an id to deep-link to. Matches and
+        // messages are Deal Room activity; campaign updates (new applicant,
+        // not selected, campaign filled) belong to the campaign screens.
+        const type = item.getAttribute('data-notif-type');
+        if (type === 'announcement') return; // read in place, nothing to open
+        const role = store.currentUser.role;
+        const campaignHome = role === 'BUSINESS' ? 'campaigns' : 'applications';
+        this.switchView(type === 'system' ? campaignHome : 'dealroom');
       };
     });
 
@@ -368,7 +399,7 @@ class PingPlatform {
           this.isSettingsOpen = false;
           modalSet.classList.remove('active');
           this.showToast('Cache cleared! ⚡');
-          this.switchView(store.currentUser.role === 'ADMIN' ? 'ops' : 'explore');
+          this.switchView(this.homeView());
         }
       };
     }
@@ -436,14 +467,18 @@ class PingPlatform {
     // Operations; Business/Creator never see it, regardless of how
     // switchView was reached (stale state, direct call, etc.).
     const role = store.currentUser.role;
-    if (role === 'ADMIN' && view !== 'ops') view = 'ops';
-    if (role !== 'ADMIN' && view === 'ops') view = 'explore';
+    // Old names from before the campaign flow replaced Explore & Match.
+    if (view === 'explore' || view === 'briefs') view = this.homeView(role);
+    const allowed = role === 'ADMIN' ? ['ops']
+      : role === 'BUSINESS' ? ['campaigns', 'dealroom', 'mediakit']
+        : ['discover', 'applications', 'dealroom', 'mediakit'];
+    if (!allowed.includes(view)) view = this.homeView(role);
 
     this.currentView = view;
     if (view === 'dealroom' && payload) {
       this.activeDealId = payload;
     }
-    if (view === 'briefs' && payload) {
+    if ((view === 'campaigns' || view === 'discover') && payload) {
       this.activeBriefId = payload;
     }
 
@@ -454,15 +489,30 @@ class PingPlatform {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     switch (view) {
-      case 'explore':
-        this.currentViewCleanup = renderDiscoveryPlatform(this.viewportEl, (matchId) => {
-          this.switchView('dealroom', matchId);
-        }, (msg) => this.showToast(msg));
+      case 'campaigns':
+        this.currentViewCleanup = renderCampaignsPlatform(this.viewportEl, {
+          onShowToast: (msg) => this.showToast(msg),
+          onOpenChat: (id) => this.switchView('dealroom', id),
+          focusBriefId: this.activeBriefId
+        });
+        this.activeBriefId = null;
         break;
 
-      case 'briefs':
-        this.currentViewCleanup = renderBriefsPlatform(this.viewportEl, (msg) => this.showToast(msg), this.activeBriefId);
+      case 'discover':
+        this.currentViewCleanup = renderOpportunitiesPlatform(this.viewportEl, {
+          onShowToast: (msg) => this.showToast(msg),
+          onOpenChat: (id) => this.switchView('dealroom', id),
+          onNavigate: (v) => this.switchView(v),
+          focusBriefId: this.activeBriefId
+        });
         this.activeBriefId = null;
+        break;
+
+      case 'applications':
+        this.currentViewCleanup = renderApplicationsPlatform(this.viewportEl, {
+          onOpenChat: (id) => this.switchView('dealroom', id),
+          onNavigate: (v) => this.switchView(v)
+        });
         break;
 
       case 'dealroom':
@@ -479,12 +529,14 @@ class PingPlatform {
         break;
 
       default:
-        this.switchView(role === 'ADMIN' ? 'ops' : 'explore');
+        this.switchView(this.homeView(role));
         break;
     }
   }
 
+  // Demo sessions only: real announcements arrive in the notifications bell.
   checkBroadcasts() {
+    if (store.isRealAccount) return;
     const bcasts = store.broadcasts || [];
     if (bcasts.length > 0) {
       const top = bcasts[0];

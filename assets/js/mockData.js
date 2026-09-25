@@ -26,6 +26,7 @@ export const SEED_USERS = [
     id: "creator_1",
     name: "Simran Kaur",
     role: "INFLUENCER",
+    talentType: "INFLUENCER",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
     bio: "Local food & café explorer covering the best brews, bakes, and hidden menus around Chandigarh.",
     location: "Sector 17, Chandigarh",
@@ -63,6 +64,7 @@ export const SEED_USERS = [
     id: "creator_2",
     name: "Arjun Mehta",
     role: "INFLUENCER",
+    talentType: "INFLUENCER",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
     bio: "Calisthenics coach and gym-floor storyteller helping his neighbourhood's fitness crowd train smarter, one reel at a time.",
     location: "HSR Layout, Bengaluru",
@@ -99,6 +101,7 @@ export const SEED_USERS = [
     id: "creator_3",
     name: "Priya Malhotra",
     role: "INFLUENCER",
+    talentType: "INFLUENCER",
     avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
     bio: "Skincare-first beauty creator sharing honest local salon reviews and everyday glow-up routines.",
     location: "Koregaon Park, Pune",
@@ -135,6 +138,7 @@ export const SEED_USERS = [
     id: "creator_4",
     name: "Karan Sethi",
     role: "INFLUENCER",
+    talentType: "INFLUENCER",
     avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80",
     bio: "Streetwear stylist and boutique showcase creator styling his city's fashion scene for the 'gram.",
     location: "Hauz Khas, Delhi",
@@ -167,6 +171,69 @@ export const SEED_USERS = [
       "https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=600&q=80"
     ],
     joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 70
+  },
+  {
+    id: "dj_1",
+    name: "DJ Kabir",
+    role: "INFLUENCER",
+    talentType: "DJ",
+    avatar: "https://images.unsplash.com/photo-1695277715416-e225cf09d70c?auto=format&fit=crop&w=400&q=80",
+    bio: "Bollywood-meets-house DJ playing café terraces, rooftop launches and club nights around the tricity.",
+    location: "Sector 7, Chandigarh",
+    jobTitle: "DJ",
+    company: "Kabir Live",
+    tags: ["Events", "Lifestyle"],
+    verified: true,
+    verificationStatus: "VERIFIED",
+    status: "ACTIVE",
+    pingScore: 89,
+    stats: { followers: "9K", engagement: "5.2%" },
+    socialStats: { instagramFollowers: "9K" },
+    talentDetails: { genres: "Bollywood, House", gigs: "140+", mixLink: "https://soundcloud.com/" },
+    portfolio: [],
+    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 35
+  },
+  {
+    id: "comic_1",
+    name: "Aman Sood",
+    role: "INFLUENCER",
+    talentType: "COMEDIAN",
+    avatar: "https://images.unsplash.com/photo-1730875648513-b08f39b8924c?auto=format&fit=crop&w=400&q=80",
+    bio: "Observational stand-up about Punjabi families, office life and chai. Hosts open mics every Thursday.",
+    location: "Sector 35, Chandigarh",
+    jobTitle: "Stand-up Comedian",
+    company: "Aman Sood Comedy",
+    tags: ["Events", "Lifestyle"],
+    verified: false,
+    verificationStatus: "UNVERIFIED",
+    status: "ACTIVE",
+    pingScore: 84,
+    stats: { followers: "22K", engagement: "9.1%" },
+    socialStats: { instagramFollowers: "22K" },
+    talentDetails: { style: "Observational, crowd work", shows: "80+", showReel: "https://youtube.com/" },
+    portfolio: [],
+    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 18
+  },
+  {
+    id: "band_1",
+    name: "The Loop Theory",
+    role: "INFLUENCER",
+    talentType: "BAND",
+    avatar: "https://images.unsplash.com/photo-1526478806334-5fd488fcaabc?auto=format&fit=crop&w=400&q=80",
+    bio: "Indie-rock three-piece playing originals and Hindi rock covers. Café gigs, college fests, brand launches.",
+    location: "Mohali, Chandigarh",
+    jobTitle: "Band",
+    company: "The Loop Theory",
+    tags: ["Events"],
+    verified: true,
+    verificationStatus: "VERIFIED",
+    status: "ACTIVE",
+    pingScore: 86,
+    stats: { followers: "6K", engagement: "6.4%" },
+    socialStats: { instagramFollowers: "6K" },
+    talentDetails: { genre: "Indie rock, Hindi rock", gigs: "55", lineup: "3-piece", listenLink: "https://open.spotify.com/" },
+    portfolio: [],
+    joinedAt: Date.now() - 1000 * 60 * 60 * 24 * 50
   },
   {
     id: "brand_1",
@@ -316,6 +383,12 @@ export const SEED_USERS = [
 export const SEED_BRIEFS = [
   {
     id: "brief_1",
+    deliverables: "1 Reel + 2 Stories",
+    talentType: "INFLUENCER",
+    slots: 2,
+    slotsFilled: 0,
+    status: "OPEN",
+    endsOn: Date.now() + 1000 * 60 * 60 * 24 * 10,
     brandId: "brand_1",
     brandName: "The Brew Yard Café",
     brandAvatar: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=400&q=80",
@@ -337,6 +410,13 @@ export const SEED_BRIEFS = [
   },
   {
     id: "brief_2",
+    deliverables: "1 Reel + 3 progress Stories",
+    talentType: "INFLUENCER",
+    slots: 1,
+    slotsFilled: 1,
+    status: "FILLED",
+    startsOn: Date.now() + 1000 * 60 * 60 * 24 * 8,
+    endsOn: Date.now() + 1000 * 60 * 60 * 24 * 14,
     brandId: "brand_2",
     brandName: "Glow Studio Salon",
     brandAvatar: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80",
@@ -358,6 +438,12 @@ export const SEED_BRIEFS = [
   },
   {
     id: "brief_3",
+    deliverables: "1 day-in-the-life Reel + 2 Stories",
+    talentType: "INFLUENCER",
+    slots: 1,
+    slotsFilled: 0,
+    status: "OPEN",
+    endsOn: Date.now() + 1000 * 60 * 60 * 24 * 18,
     brandId: "brand_3",
     brandName: "FitZone Studio",
     brandAvatar: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80",
@@ -376,8 +462,46 @@ export const SEED_BRIEFS = [
     requiredStories: 2,
     applicationsCount: 2,
     timestamp: Date.now() - 1000 * 60 * 60 * 24 * 1
+  },
+  {
+    id: "brief_4",
+    deliverables: "One 2-hour evening set (8 to 10 pm)",
+    talentType: "ANY",
+    slots: 1,
+    slotsFilled: 0,
+    status: "OPEN",
+    endsOn: Date.now() + 1000 * 60 * 60 * 24 * 9,
+    brandId: "brand_1",
+    brandName: "The Brew Yard Café",
+    brandAvatar: "https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=400&q=80",
+    title: "Friday Night Live at The Brew Yard",
+    description: "We're starting a Friday live night on our terrace. Looking for one act for the launch night: a DJ, a band or a comedy set. Around 80 guests, sound system provided.",
+    budget: "₹8,000",
+    location: "Sector 17, Chandigarh",
+    deadline: Date.now() + 1000 * 60 * 60 * 24 * 9,
+    tags: ["Events", "Food & Café"],
+    requirements: [],
+    applicationsCount: 3,
+    timestamp: Date.now() - 1000 * 60 * 60 * 20
   }
 ].map(b => ({ ...b, isDemo: true }));
+
+// Demo applications for the campaign matching flow. Simran is already
+// booked on the Glow Studio campaign, whose dates overlap the Brew Yard reels
+// brief, so selecting her there shows the scheduling-clash warning.
+const HOUR = 1000 * 60 * 60;
+export const SEED_APPLICATIONS = [
+  { briefId: "brief_1", creatorId: "creator_1", status: "PENDING", createdAt: Date.now() - HOUR * 30, pitch: "I cover cafés around Sector 17 every week and most of my audience is local. I'd shoot the monsoon menu at golden hour in your corner seats." },
+  { briefId: "brief_1", creatorId: "creator_4", status: "PENDING", createdAt: Date.now() - HOUR * 26, pitch: "Happy to style a cosy monsoon look around the menu. My followers love café outfits." },
+  { briefId: "brief_1", creatorId: "creator_2", status: "PENDING", createdAt: Date.now() - HOUR * 20, pitch: "" },
+  { briefId: "brief_1", creatorId: "creator_3", status: "PENDING", createdAt: Date.now() - HOUR * 7, pitch: "Would love to do a cosy 'rainy day treat yourself' reel with your filter coffee." },
+  { briefId: "brief_4", creatorId: "dj_1", status: "PENDING", createdAt: Date.now() - HOUR * 18, pitch: "Can do a chilled early set that builds up to Bollywood-house by 9:30. I bring my own controller." },
+  { briefId: "brief_4", creatorId: "comic_1", status: "PENDING", createdAt: Date.now() - HOUR * 12, pitch: "30 minutes of clean, family-friendly stand-up, and I'll host the rest of the night." },
+  { briefId: "brief_4", creatorId: "band_1", status: "PENDING", createdAt: Date.now() - HOUR * 5, pitch: "An acoustic-leaning 90-minute set that suits a terrace crowd: originals and Hindi rock covers." },
+  { briefId: "brief_2", creatorId: "creator_1", status: "SELECTED", createdAt: Date.now() - HOUR * 80, decidedAt: Date.now() - HOUR * 60, pitch: "I do honest skincare diaries, happy to document all 14 days." },
+  { briefId: "brief_3", creatorId: "creator_2", status: "PENDING", createdAt: Date.now() - HOUR * 3, pitch: "This is my home gym crowd. I can film a real training day." }
+].map(a => ({ decidedAt: null, matchId: null, ...a }));
+
 
 export const SEED_MATCHES = [
   {
@@ -415,7 +539,7 @@ export const SEED_MATCHES = [
       {
         id: "msg_3",
         senderId: "brand_1",
-        text: "We'd like it live by next weekend. Here's a Smart Proposal with the deliverables and milestones:",
+        text: "We'd like it live by next weekend. Here's a Smart Proposal with the deliverables and the fee:",
         timestamp: Date.now() - 1000 * 60 * 30,
         read: true,
         type: "proposal",
@@ -424,15 +548,9 @@ export const SEED_MATCHES = [
           title: "Monsoon Menu Café Reel + Stories",
           price: "₹4,000",
           deadline: "Oct 15, 2026",
-          status: "ACCEPTED",
+          status: "PENDING",
           description: "1 Instagram Reel (min 30 seconds) covering 3 monsoon menu items + 2 Stories tagging the café.",
-          senderSignature: "The Brew Yard Café",
-          creatorSignature: "Simran Kaur",
-          milestones: [
-            { id: "m1", title: "Concept & Shoot Date Confirmed", amount: "₹1,200", status: "PAID" },
-            { id: "m2", title: "Draft Reel & Café Review", amount: "₹1,600", status: "UNDER_REVIEW", contentUrl: "https://drive.google.com/sample-cut" },
-            { id: "m3", title: "Final Publish & Story Tags", amount: "₹1,200", status: "LOCKED" }
-          ]
+          senderSignature: "The Brew Yard Café"
         }
       }
     ]
@@ -464,18 +582,3 @@ export const SEED_MATCHES = [
     ]
   }
 ];
-
-export const SEED_ADMIN_STATS = {
-  totalUsers: 62,
-  split: { business: 14, influencer: 48 },
-  revenue: "₹86,000",
-  activeMatches: 21,
-  pendingVerifications: 5,
-  avgMatchScore: 91,
-  totalDisputes: 0,
-  trends: {
-    weeklyGrowth: "+18%",
-    contractCompletionRate: "96.2%",
-    avgResponseTime: "2.1 hrs"
-  }
-};

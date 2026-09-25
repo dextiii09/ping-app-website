@@ -6,12 +6,61 @@ import { detectLocation } from '../geoService.js';
 import { escapeHtml } from '../domUtils.js';
 import { displayPingScore } from '../pingScoreService.js';
 import { initCustomSelects } from '../customSelect.js';
+import { TALENT_TYPES, talentMeta, talentTypeOf, talentHighlights, talentLinks, portfolioOf, talentBadge, safeUrl } from '../talentTypes.js';
 
 // Empty or zero audience figures mean "not added", not a real zero.
 const showStat = (v) => (!v || v === '0' || v === '0%' ? '—' : v);
 
 export function renderMediaKitPlatform(container, onShowToast) {
   let isGeneratingBio = false;
+  // Type-specific details typed so far, kept across talent-type switches.
+  let draftDetails = {};
+
+  function talentFieldsHtml(type, details) {
+    const meta = talentMeta(type);
+    if (!meta.fields.length) {
+      return '<p class="mk-section-help">Influencers show their reach with the Audience numbers below.</p>';
+    }
+    return `<div class="mk-talent-grid">${meta.fields.map(f => `
+      <div>
+        <label for="mkTd_${f.key}" style="font-size:11px; color:var(--text-muted);">${escapeHtml(f.label)}</label>
+        <input type="text" inputmode="${f.url ? 'url' : 'text'}" id="mkTd_${f.key}" data-td="${f.key}" data-td-url="${f.url ? '1' : ''}" value="${escapeHtml(details[f.key] || '')}" placeholder="${escapeHtml(f.placeholder)}" maxlength="${f.url ? 300 : 80}" style="width:100%; margin-top:6px;">
+      </div>`).join('')}</div>`;
+  }
+
+  const VERIFY = {
+    VERIFIED: { label: 'Verified by Ping', text: 'Your profile shows the verified badge.', icon: 'ph-seal-check', action: '' },
+    PENDING: { label: 'Verification requested', text: 'The Ping team is reviewing your profile.', icon: 'ph-hourglass', action: '' },
+    REJECTED: { label: 'Not verified yet', text: 'Add more detail, like your links and socials, then ask again.', icon: 'ph-seal', action: 'Ask again' },
+    UNVERIFIED: { label: 'Get verified', text: 'The Ping team checks your profile and links, then adds the verified badge.', icon: 'ph-seal', action: 'Request' }
+  };
+
+  function verificationPanel(u) {
+    const v = VERIFY[u.verified ? 'VERIFIED' : u.verificationStatus] || VERIFY.UNVERIFIED;
+    const key = u.verified ? 'verified' : String(u.verificationStatus || 'unverified').toLowerCase();
+    return `
+      <div class="mk-verify is-${key}">
+        <i class="ph-fill ${v.icon}"></i>
+        <div><b>${v.label}</b><span>${v.text}</span></div>
+        ${v.action ? `<button type="button" class="btn-glass" id="mkRequestVerify">${v.action}</button>` : ''}
+      </div>`;
+  }
+
+  // Something the Ping team can actually check: a bio plus a link or handle.
+  function hasSomethingToVerify(u) {
+    const links = [u.socials?.instagram, u.socials?.youtube, u.website, ...(Array.isArray(u.portfolio) ? u.portfolio : [])];
+    const detailLinks = Object.values(u.talentDetails || {}).filter(v => /^https?:\/\//i.test(String(v || '')));
+    return !!String(u.bio || '').trim() && (links.some(Boolean) || detailLinks.length > 0);
+  }
+
+  function workRowHtml(item = {}) {
+    return `
+      <div class="mk-work-row">
+        <input type="text" class="mk-work-label" value="${escapeHtml(item.label || '')}" placeholder="What it was, e.g. Café launch reel" maxlength="60">
+        <input type="text" inputmode="url" class="mk-work-url" value="${escapeHtml(item.url || '')}" placeholder="https://…" maxlength="300">
+        <button type="button" class="mk-work-del" aria-label="Remove link"><i class="ph-bold ph-x"></i></button>
+      </div>`;
+  }
   // Re-read from the store on every render (not captured once at view-open)
   // so a saved profile edit is reflected immediately instead of the form
   // reverting to pre-save values. `bindEvents()` below shares this same
@@ -23,6 +72,10 @@ export function renderMediaKitPlatform(container, onShowToast) {
     const isCreator = user.role === 'INFLUENCER';
     const isBusiness = user.role === 'BUSINESS';
     const myPingScore = displayPingScore(user, { activeDeals: store.getMatchesForCurrentUser().length });
+    const talentType = isCreator ? talentTypeOf(user) : null;
+    const highlights = isCreator ? talentHighlights(user) : [];
+    const links = isCreator ? talentLinks(user) : [];
+    draftDetails = { ...(user.talentDetails || {}) };
 
     container.innerHTML = `
       <div class="section-header">
@@ -39,8 +92,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
       <div class="media-kit-grid">
         <!-- Identity & Trust Showcase Card -->
         <div class="glass-box" style="padding:32px; display:flex; flex-direction:column; align-items:center; text-align:center;">
-          <div style="width:116px; height:116px; border-radius:999px; border:3px solid var(--gold); overflow:hidden; box-shadow:0 0 35px rgba(230,255,26,0.25); margin-bottom:18px;">
-            <img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.name)}" style="width:100%; height:100%; object-fit:cover;">
+          <div class="mk-avatar">
+            <img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.name)}">
+            <label class="mk-avatar-edit" title="Change photo">
+              <i class="ph-bold ph-camera"></i><span>Change photo</span>
+              <input type="file" id="mkAvatarInput" accept="image/jpeg,image/png,image/webp" hidden>
+            </label>
           </div>
 
           <div style="font-family:var(--font-heading); font-size:24px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
@@ -49,6 +106,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
           </div>
           <div style="font-size:14px; color:var(--gold); font-weight:600; margin-top:2px;">${escapeHtml(user.company || user.jobTitle || user.role)}</div>
           <div style="font-size:12px; color:var(--text-dim); margin-top:4px;"><i class="ph-fill ph-map-pin"></i> ${escapeHtml(user.location || 'India')}</div>
+          ${isCreator ? `<div class="mk-type-row">${talentBadge(talentType)}</div>` : ''}
 
           <!-- PingScore Animated Circular Gauge -->
           <div style="margin:24px 0 16px; background:rgba(230,255,26,0.05); border:1px solid var(--border-gold); border-radius:var(--radius-md); padding:16px 20px; width:100%; display:flex; align-items:center; justify-content:space-between;">
@@ -59,16 +117,17 @@ export function renderMediaKitPlatform(container, onShowToast) {
             <div style="font-family:var(--font-heading); font-size:36px; font-weight:700; color:var(--gold);">${myPingScore}</div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-bottom:20px;">
-            <div class="metric-pill" style="padding:10px;">
-              <div class="metric-pill-num" style="color:var(--accent-green)">${user.completionRate ? user.completionRate + "%" : (user.isDemo ? "98%" : "—")}</div>
-              <div class="metric-pill-label">Completion</div>
+          ${verificationPanel(user)}
+
+          ${isCreator && talentType !== 'INFLUENCER' ? `
+            <div class="mk-highlights">
+              <div class="mk-block-title">${escapeHtml(talentMeta(talentType).label)} details</div>
+              ${highlights.length
+                ? highlights.map(h => `<div class="mk-hl-row"><span>${escapeHtml(h.label)}</span><strong>${escapeHtml(h.value)}</strong></div>`).join('')
+                : '<p class="mk-hl-empty">Add your details in the form so brands can see them.</p>'}
+              ${links.length ? `<div class="cm-app-links">${links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-up-right"></i>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
             </div>
-            <div class="metric-pill" style="padding:10px;">
-              <div class="metric-pill-num">${user.responseTime || (user.isDemo ? '< 2h' : '—')}</div>
-              <div class="metric-pill-label">Response</div>
-            </div>
-          </div>
+          ` : ''}
 
           <!-- Social Reach Breakdown -->
           <div style="width:100%; text-align:left; border-top:1px solid var(--border-subtle); padding-top:16px;">
@@ -168,7 +227,19 @@ export function renderMediaKitPlatform(container, onShowToast) {
               </div>
 
               ${isCreator ? `
+                <div class="mk-section">
+                  <div class="mk-section-title">What you do</div>
+                  <div class="cm-choice-row" id="mkTalentChips" role="radiogroup" aria-label="Talent type">
+                    ${TALENT_TYPES.map(t => `<button type="button" class="cm-choice ${t.id === talentType ? 'is-on' : ''}" role="radio" aria-checked="${t.id === talentType}" data-talent-type="${t.id}"><i class="ph-fill ${t.icon}"></i>${escapeHtml(t.label)}</button>`).join('')}
+                  </div>
+                  <p class="mk-section-help">Brands post campaigns for a talent type. You'll see the ones made for yours, plus the ones open to everyone.</p>
+                  <div id="mkTalentFields">${talentFieldsHtml(talentType, draftDetails)}</div>
+                </div>
+              ` : ''}
+
+              ${isCreator ? `
                 <div style="border-top:1px solid var(--border-subtle); padding-top:18px;">
+                  <div id="mkRateCard" ${talentType !== 'INFLUENCER' ? 'hidden' : ''}>
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin-bottom:12px;">Rate Card</div>
                   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                     <div>
@@ -183,6 +254,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                       <label style="font-size:11px; color:var(--text-muted);">Store/Event Visit</label>
                       <input type="text" id="inputRateEvent" value="${escapeHtml(user.settings?.rateCard?.eventAppearance || '')}" placeholder="e.g. ₹15,000" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
                     </div>
+                  </div>
                   </div>
 
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin:18px 0 12px;">Social Handles</div>
@@ -213,6 +285,11 @@ export function renderMediaKitPlatform(container, onShowToast) {
                       <input type="text" id="inputStatEng" value="${escapeHtml(user.socialStats?.avgEngagement && user.socialStats.avgEngagement !== '0%' ? user.socialStats.avgEngagement : '')}" placeholder="e.g. 6.8%" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
                     </div>
                   </div>
+
+                  <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin:18px 0 4px;">Past work</div>
+                  <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Up to 5 links brands can open from your application: reels, sets, shows, anything you're proud of.</div>
+                  <div id="mkPortfolio">${portfolioOf(user).filter(w => !w.image).map(w => workRowHtml(w)).join('')}</div>
+                  <button type="button" class="btn-glass mk-add-work" id="mkAddWork"><i class="ph-bold ph-plus"></i> Add a link</button>
                 </div>
               ` : ''}
 
@@ -275,7 +352,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                 </div>
                 <div>
                   <div style="font-family:var(--font-heading); font-size:24px; font-weight:700; color:#fff;">${escapeHtml(user.name)}</div>
-                  <div style="font-size:13.5px; color:var(--gold); font-weight:600;">${escapeHtml(user.company || user.jobTitle)}</div>
+                  <div style="font-size:13.5px; color:var(--gold); font-weight:600;">${escapeHtml(user.company || user.jobTitle)}${isCreator ? ` · ${escapeHtml(talentMeta(talentType).label)}` : ''}</div>
                   <div style="font-size:12px; color:var(--text-muted);">${escapeHtml(user.location)} • ${user.verified ? 'Verified on Ping' : 'Ping media kit'}</div>
                 </div>
               </div>
@@ -289,6 +366,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
             <p style="font-size:14px; line-height:1.55; color:var(--text-muted); margin-bottom:24px;">
               ${escapeHtml(user.bio)}
             </p>
+
+            ${isCreator && talentType !== 'INFLUENCER' && highlights.length ? `
+              <div style="display:grid; grid-template-columns:repeat(${highlights.length}, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:12px;">
+                ${highlights.map(h => `<div style="text-align:center;"><div style="font-size:17px; font-weight:700; color:#fff;">${escapeHtml(h.value)}</div><div style="font-size:10.5px; color:var(--text-dim);">${escapeHtml(h.label)}</div></div>`).join('')}
+              </div>
+            ` : ''}
 
             <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:20px;">
               <div style="text-align:center;">
@@ -382,6 +465,80 @@ export function renderMediaKitPlatform(container, onShowToast) {
       };
     }
 
+    const avatarInput = container.querySelector('#mkAvatarInput');
+    if (avatarInput) {
+      avatarInput.onchange = async () => {
+        const file = avatarInput.files && avatarInput.files[0];
+        if (!file) return;
+        const holder = avatarInput.closest('.mk-avatar');
+        holder.classList.add('is-busy');
+        try {
+          await store.updateAvatar(file);
+          onShowToast('Photo updated.');
+          render();
+        } catch (err) {
+          console.error('Photo upload failed:', err);
+          holder.classList.remove('is-busy');
+          onShowToast(err?.message && !/fetch|network|storage|bucket|jwt|row-level/i.test(err.message) ? err.message : "Couldn't upload that photo. Please try again.");
+        } finally {
+          avatarInput.value = '';
+        }
+      };
+    }
+
+    const btnVerify = container.querySelector('#mkRequestVerify');
+    if (btnVerify) {
+      btnVerify.onclick = async () => {
+        if (!hasSomethingToVerify(user)) {
+          onShowToast('Add a bio and at least one social handle or link first, so the team has something to check.');
+          return;
+        }
+        btnVerify.disabled = true;
+        try {
+          await store.requestVerification();
+          onShowToast("Request sent. We'll let you know when you're verified.");
+          render();
+        } catch (err) {
+          console.error('Verification request failed:', err);
+          btnVerify.disabled = false;
+          onShowToast("Couldn't send the request. Please try again.");
+        }
+      };
+    }
+
+    // Talent type chips swap the type-specific fields without a full
+    // re-render, so anything typed elsewhere in the form stays.
+    const talentChips = container.querySelector('#mkTalentChips');
+    if (talentChips) {
+      talentChips.onclick = (e) => {
+        const chip = e.target.closest('[data-talent-type]');
+        if (!chip) return;
+        container.querySelectorAll('[data-td]').forEach((inp) => { draftDetails[inp.getAttribute('data-td')] = inp.value; });
+        const type = chip.getAttribute('data-talent-type');
+        talentChips.querySelectorAll('[data-talent-type]').forEach((c) => {
+          c.classList.toggle('is-on', c === chip);
+          c.setAttribute('aria-checked', String(c === chip));
+        });
+        container.querySelector('#mkTalentFields').innerHTML = talentFieldsHtml(type, draftDetails);
+        const rateCard = container.querySelector('#mkRateCard');
+        if (rateCard) rateCard.hidden = type !== 'INFLUENCER';
+      };
+    }
+
+    const workList = container.querySelector('#mkPortfolio');
+    const addWork = container.querySelector('#mkAddWork');
+    if (workList && addWork) {
+      addWork.onclick = () => {
+        if (workList.querySelectorAll('.mk-work-row').length >= 5) { onShowToast('You can add up to 5 links.'); return; }
+        workList.insertAdjacentHTML('beforeend', workRowHtml());
+        workList.lastElementChild.querySelector('input').focus();
+      };
+      workList.onclick = (e) => {
+        const del = e.target.closest('.mk-work-del');
+        if (del) del.closest('.mk-work-row').remove();
+      };
+    }
+
     // Niche chips (up to 3) keep the hidden comma-separated input in sync.
     const tagsInput = container.querySelector('#inputProfTags');
     container.querySelectorAll('.mk-niche-chip').forEach((chip) => {
@@ -425,6 +582,38 @@ export function renderMediaKitPlatform(container, onShowToast) {
             instagram: container.querySelector('#inputSocialInstagram').value.trim(),
             youtube: container.querySelector('#inputSocialYoutube').value.trim()
           };
+          // Talent type, its details and past-work links. Links are
+          // normalised to https and anything that isn't a web link is refused.
+          const chosen = container.querySelector('#mkTalentChips [data-talent-type].is-on');
+          fields.talentType = chosen ? chosen.getAttribute('data-talent-type') : talentTypeOf(user);
+          const details = { ...draftDetails };
+          let badLink = '';
+          container.querySelectorAll('[data-td]').forEach((inp) => {
+            const v = inp.value.trim();
+            if (inp.getAttribute('data-td-url') && v) {
+              const safe = safeUrl(v);
+              if (!safe) badLink = v;
+              details[inp.getAttribute('data-td')] = safe;
+            } else {
+              details[inp.getAttribute('data-td')] = v;
+            }
+          });
+          const work = [];
+          container.querySelectorAll('.mk-work-row').forEach((row) => {
+            const url = row.querySelector('.mk-work-url').value.trim();
+            const label = row.querySelector('.mk-work-label').value.trim();
+            if (!url && !label) return;
+            const safe = safeUrl(url);
+            if (!safe) { badLink = url || label; return; }
+            work.push({ label: label || 'Past work', url: safe });
+          });
+          if (badLink) {
+            onShowToast(`"${badLink.slice(0, 40)}" doesn't look like a link. Use a full web address like https://…`);
+            return;
+          }
+          fields.talentDetails = details;
+          fields.portfolio = work.slice(0, 5);
+
           const eng = container.querySelector('#inputStatEng').value.trim();
           fields.socialStats = {
             ...(user.socialStats || {}),

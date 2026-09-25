@@ -9,8 +9,8 @@
 // Secrets:
 //   supabase secrets set WEBHOOK_SECRET=<same value as in the SQL trigger>
 //   supabase secrets set RESEND_API_KEY=<from resend.com>
-//   supabase secrets set EMAIL_FROM="Ping <notifications@yourdomain.com>"
-//   supabase secrets set SITE_URL=https://yourdomain.com
+//   supabase secrets set EMAIL_FROM="Ping <notifications@pingapp.site>"
+//   supabase secrets set SITE_URL=https://pingapp.site
 // (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided automatically.)
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

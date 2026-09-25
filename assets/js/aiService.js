@@ -2,22 +2,21 @@
 // User-facing name is always "Ping AI" - the underlying model (Gemini) is an
 // implementation detail and never surfaced in UI copy.
 //
-// No API key ships in this file, or anywhere else in client source. The
-// old hardcoded key was a live secret sitting in a static .js file every
-// visitor's browser downloaded - see AUDIT_REPORT.md. The actual key now
-// lives only in the `generateAiText` Cloud Function's secret config
-// (functions/index.js) and is called through Firebase Callable Functions,
-// which requires the caller to be a signed-in Firebase Auth user - it's
-// never reachable by an anonymous script scraping this file. Every method
-// below already falls back to curated canned responses if the function call
+// No API key ships in this file, or anywhere else in client source. The key
+// lives only in the secrets of the generate-ai-text Supabase Edge Function
+// (supabase/functions/generate-ai-text), which only accepts signed-in users.
+// Every method below falls back to curated canned responses if the call
 // fails for any reason (not deployed yet, network error, etc.), so AI
 // features degrade gracefully rather than breaking.
 import { supabase } from './supabaseClient.js';
 
 export const aiService = {
-  // Calls the generate-ai-text Supabase Edge Function (JWT-verified, so only signed-in users).
+  // Calls the generate-ai-text Supabase Edge Function. It only accepts
+  // signed-in users, so without a session this goes straight to the fallback.
   async callPingAI(prompt) {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
       const { data, error } = await supabase.functions.invoke('generate-ai-text', { body: { prompt } });
       if (error) throw error;
       return data?.text || null;
@@ -164,19 +163,5 @@ export const aiService = {
     insights.push(listsRates ? (userB.role === 'BUSINESS' ? 'They\'ve listed a budget range.' : 'They\'ve listed their rates.') : 'No rates listed yet. Ask in the Deal Room.');
 
     return { score, reason, insights };
-  },
-
-  // Generate formal proposal terms draft
-  async generateProposalTerms(title, budget, deliverableSummary) {
-    await new Promise(r => setTimeout(r, 300));
-    return {
-      scopeOfWork: `Deliverables: ${deliverableSummary}. All deliverables must adhere to brand aesthetic guidelines with 1 round of revisions included.`,
-      licensing: `Brand receives full 12-month organic and digital paid media usage rights across social channels with proper talent credit.`,
-      milestoneSplit: [
-        { percentage: 30, title: "Concept & Script Sign-off" },
-        { percentage: 40, title: "Rough Cut & Brand Review" },
-        { percentage: 30, title: "Final Publication & Deliverables Handover" }
-      ]
-    };
   }
 };

@@ -531,6 +531,43 @@ html.lenis, html.lenis body { height: auto; }
 .ps-tap { position: absolute; left: 62%; top: 58%; z-index: 3; width: 38px; height: 38px; margin: -19px; border: 1.5px solid rgba(243, 243, 238, 0.85); border-radius: 50%; background: rgba(243, 243, 238, 0.28); opacity: 0; pointer-events: none; }
 .ps-deal-note { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: var(--lp-lime); }
 
+/* Campaign flow screens: post, apply, pick, chat */
+.ps-form { display: flex; flex-direction: column; gap: 9px; }
+.ps-field { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border: 1px solid var(--lp-line); border-radius: 14px; background: #121211; }
+.ps-field > span { font-family: var(--lp-mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lp-dim); }
+.ps-field b { font-size: 14px; font-weight: 600; letter-spacing: -0.02em; }
+.ps-field b.ps-lime { font-size: 19px; color: var(--lp-lime); }
+.ps-chips-tight { flex-wrap: wrap; gap: 5px; margin: 0; }
+.ps-chips-tight .ps-chip { padding: 5px 8px; font-size: 10.5px; }
+.ps-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.ps-stepper { display: flex; justify-content: space-between; align-items: center; }
+.ps-stepper i { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--lp-line-2); border-radius: 7px; font-size: 12px; font-style: normal; color: var(--lp-muted); }
+.ps-stepper b { font-size: 19px; }
+.ps-publish { position: relative; display: grid; place-items: center; height: 48px; margin-top: auto; border-radius: 16px; background: var(--lp-lime); font-size: 14px; font-weight: 600; color: #0a0a0a; }
+.ps-publish .ps-tap, .ps-apply-btn .ps-tap { left: 50%; top: 50%; }
+.ps-brief { display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid var(--lp-line-2); border-radius: 24px; background: #141413; }
+.ps-brief-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.ps-brief-brand div { display: flex; flex-direction: column; line-height: 1.25; }
+.ps-brief-brand b { font-size: 13.5px; font-weight: 600; }
+.ps-brief-brand span { font-size: 11px; color: var(--lp-muted); }
+.ps-brief h4 { margin: 2px 0 4px; font-size: 21px; font-weight: 600; letter-spacing: -0.035em; }
+.ps-pitch { overflow: hidden; margin-top: 4px; padding: 9px 11px; border-left: 2px solid var(--lp-lime); border-radius: 4px 12px 12px 4px; background: rgba(230, 255, 26, 0.06); font-size: 12px; line-height: 1.4; }
+.ps-pitch span { display: block; margin-bottom: 2px; font-family: var(--lp-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lp-lime); }
+.ps-apply-btn { position: relative; display: grid; place-items: center; height: 46px; margin-top: 8px; border-radius: 15px; background: var(--lp-ink); font-size: 14px; font-weight: 600; color: #0a0a0a; transition: background-color 0.35s; }
+.ps-apply-btn.is-done { background: var(--lp-lime); }
+.ps-apply-a, .ps-apply-b { grid-area: 1 / 1; transition: opacity 0.3s, transform 0.5s var(--lp-ease); }
+.ps-apply-b { display: inline-flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(10px); }
+.ps-apply-btn.is-done .ps-apply-a { opacity: 0; transform: translateY(-10px); }
+.ps-apply-btn.is-done .ps-apply-b { opacity: 1; transform: none; }
+.ps-apply-note { margin-top: 14px; font-size: 12px; color: var(--lp-muted); text-align: center; }
+.ps-slots { display: flex; align-items: center; gap: 5px; padding: 8px 11px; border: 1px solid var(--lp-line-2); border-radius: 999px; }
+.ps-slots i { width: 9px; height: 9px; border: 1.5px solid var(--lp-line-2); border-radius: 50%; transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s; }
+.ps-slots i.is-on { border-color: var(--lp-lime); background: var(--lp-lime); box-shadow: 0 0 8px rgba(230, 255, 26, 0.6); }
+.ps-card-quote { margin-top: 6px; font-size: 11.5px; line-height: 1.35; color: rgba(243, 243, 238, 0.86); }
+.ps-chat { padding: 60px 0 16px; }
+.ps-note { align-self: center; display: flex; align-items: center; gap: 6px; max-width: 94%; padding: 8px 12px; border: 1px solid rgba(230, 255, 26, 0.45); border-radius: 14px; background: rgba(230, 255, 26, 0.07); font-size: 11.5px; line-height: 1.35; text-align: center; }
+.ps-note i { flex: none; color: var(--lp-lime); }
+
 /* ─── Audience (bento) ────────────────────────────────────────────────────── */
 .lp-audience-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 32px; margin-bottom: clamp(40px, 5vw, 72px); }
 .lp-audience-head .lp-h2 { max-width: 12ch; margin-top: 20px; }
@@ -1081,6 +1118,14 @@ html.lenis, html.lenis body { height: auto; }
 .auth-role.is-on { border-color: var(--lp-lime); background: rgba(230, 255, 26, 0.07); }
 .auth-role.is-on > i { background: var(--lp-lime); color: #0a0a0a; }
 .auth-role.is-on .auth-role-dot { border-color: var(--lp-lime); box-shadow: inset 0 0 0 3.5px #0a0a0a, inset 0 0 0 10px var(--lp-lime); }
+
+/* Talent type (creators): influencer, comedian, DJ, band, artist */
+.auth-talents { display: flex; flex-wrap: wrap; gap: 8px; }
+.auth-talent { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px; white-space: nowrap; border: 1px solid var(--lp-line-2); border-radius: 14px; background: rgba(255, 255, 255, 0.025); font: inherit; font-size: 13.5px; font-weight: 500; color: var(--lp-muted); text-align: left; cursor: pointer; transition: border-color 0.25s, background-color 0.25s, color 0.25s; }
+.auth-talent i { font-size: 18px; transition: color 0.25s; }
+.auth-talent:hover { border-color: rgba(255, 255, 255, 0.3); color: var(--lp-ink); }
+.auth-talent.is-on { border-color: var(--lp-lime); background: rgba(230, 255, 26, 0.07); color: var(--lp-ink); }
+.auth-talent.is-on i { color: var(--lp-lime); }
 
 /* Niche tiles */
 .auth-niches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

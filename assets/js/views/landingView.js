@@ -43,7 +43,9 @@ const PEEK = {
   'Food': U('1623334044303-241021148842', 480), 'Fitness': U('1534438327276-14e5300c3a48', 480),
   'Fashion': U('1490481651871-ab68de25d43d', 480), 'Beauty': U('1583209814683-c023dd293cc6', 480),
   'Lifestyle': U('1759393852314-59dc00faeed3', 480), 'Home & décor': U('1583847268964-b28dc8f51f92', 480),
-  'Events': U('1501386761578-eac5c94b800a', 480), 'Tech': U('1468495244123-6c6c332eeece', 480)
+  'Events': U('1501386761578-eac5c94b800a', 480), 'Tech': U('1468495244123-6c6c332eeece', 480),
+  'Comedy': U('1730875648513-b08f39b8924c', 480), 'DJ sets': U('1695277715416-e225cf09d70c', 480),
+  'Live music': U('1526478806334-5fd488fcaabc', 480)
 };
 
 // "Made for" gallery: ideas for what brands and creators can make together.
@@ -54,13 +56,13 @@ const GALLERY = [
   { biz: 'Boutiques', who: 'fashion creators', text: 'Try-on hauls, festive drops and styling reels.', img: U('1441984904996-e0b6ba687e04') },
   { biz: 'Bakeries', who: 'food creators', text: 'Fresh-out-of-the-oven reels and new flavour launches.', img: U('1568254183919-78a4f43a2877') },
   { biz: 'Restaurants', who: 'food creators', text: "Chef's specials, tasting menus and dine-in reviews.", img: U('1622021142947-da7dedc7c39a') },
-  { biz: 'Beauty brands', who: 'lifestyle creators', text: 'Routines, honest reviews and giveaway collabs.', img: U('1631730486572-226d1f595b68') },
-  { biz: 'Florists', who: 'lifestyle creators', text: 'Festive bouquets, gifting guides and behind-the-scenes stories.', img: U('1639696194673-67b86204b885') }
+  { biz: 'Bars & terraces', who: 'DJs & bands', text: 'Launch nights, weekend sets and live-music Fridays.', img: U('1526478806334-5fd488fcaabc') },
+  { biz: 'Venues', who: 'comedians', text: 'Open mics, hosted evenings and a laugh at your launch.', img: U('1730875648513-b08f39b8924c') }
 ];
 const pad2 = (n) => String(n).padStart(2, '0');
 
 const BUSINESS_TYPES = ['Cafés', 'Salons', 'Gyms', 'Boutiques', 'Bakeries', 'Studios', 'Restaurants', 'Florists', 'Bookshops', 'Pop-ups'];
-const NICHES = ['Food', 'Fitness', 'Fashion', 'Beauty', 'Lifestyle', 'Home & décor', 'Events', 'Tech'];
+const NICHES = ['Food', 'Fitness', 'Comedy', 'Fashion', 'DJ sets', 'Beauty', 'Live music', 'Lifestyle', 'Home & décor', 'Events', 'Tech'];
 
 function bandItems(list, altClass) {
   const half = [...list, ...list].map((item, i) => `<span class="lp-band-item${i % 2 ? ` ${altClass}` : ''}"${PEEK[item] ? ` data-peek="${PEEK[item]}"` : ''}>${item}</span><span class="lp-band-sep">${STAR}</span>`).join('');
@@ -68,25 +70,27 @@ function bandItems(list, altClass) {
 }
 
 const STEPS = [
-  { title: 'Discover', text: 'Browse creators and brands around you. Filter by niche, check their media kit, and swipe through the spotlight deck.' },
-  { title: 'Ping', text: 'Like what you see? Send a Ping, or a Super-Ping when you really mean it. Not for you? Pass. They\'ll never know.' },
-  { title: 'Match & chat', text: 'Ping each other and it\'s a match. A private Deal Room opens, and Ping AI suggests what to say next.' },
-  { title: 'Agree the deal', text: 'Send a Smart Proposal with deliverables, timeline and budget. One tap to accept, and it\'s all in writing.' }
+  { title: 'Post a campaign', text: 'A brand sets a fixed fee, how many people it needs and the date. The campaign goes out to local talent straight away.' },
+  { title: 'Talent applies', text: 'Creators, comedians, DJs and bands see the campaigns made for them. The fee is shown upfront, and applying takes one tap.' },
+  { title: 'Swipe to pick', text: 'The brand goes through applicants one card at a time: right to pick, left to pass. When every slot is filled, everyone else is told.' },
+  { title: 'Chat & deliver', text: 'Every pick opens a private chat straight away. Sort out the details, put them in a Smart Proposal, and get it done.' }
 ];
 
 const COMPARE = [
   ['What it costs', '20–30% of your budget', 'Free during the pilot'],
-  ['Who you find', 'Whoever is on their roster', 'Creators near you, by niche'],
-  ['How you talk', 'Through an account manager', 'Directly, in a Deal Room'],
-  ['Getting it agreed', 'Email chains and PDFs', 'One Smart Proposal, one tap']
+  ['Who you find', 'Whoever is on their roster', 'Local creators, comedians, DJs and bands'],
+  ['How you pick', 'A shortlist someone else chose', 'Swipe through everyone who applied'],
+  ['The price', 'Negotiated, then marked up', 'A fixed fee, shown upfront'],
+  ['How you talk', 'Through an account manager', 'Directly, the moment you pick']
 ];
 
 const FAQ = [
   ['Is Ping really free?', 'Yes. During the pilot, Ping is completely free for both creators and brands. No commission, no subscription.'],
-  ['Who is Ping for?', 'Local businesses such as cafés, salons, gyms and boutiques, and the micro and nano creators (roughly 1K to 300K followers) who want paid collaborations close to home.'],
-  ['How does matching work?', 'Browse the spotlight deck or the roster and send a Ping to anyone who fits. If they Ping you back, it\'s a match and a private Deal Room opens where you can chat and send proposals.'],
+  ['Who is Ping for?', 'Local businesses such as cafés, salons, gyms, bars and boutiques, and the local talent they work with: influencers and content creators (roughly 1K to 300K followers), comedians, DJs, bands and other artists.'],
+  ['How does it work?', 'A brand posts a campaign with a fixed fee, how many people it needs and the date. Talent of that kind nearby can apply with one tap. The brand swipes through the applicants, and every pick opens a private chat straight away. When all the slots are filled, everyone else is told the campaign is filled.'],
   ['Do I need to be in a particular city?', 'No. Ping works wherever you are. Set your location when you sign up and discovery is built around it.'],
-  ['Can brands post campaigns?', 'Yes. Brands can post a campaign brief with their budget and requirements, and creators pitch to it directly.'],
+  ['Can I negotiate the fee?', 'No. The brand sets one fixed fee per person and it is shown upfront, so everyone knows what a campaign pays before applying. Details like timing and deliverables are agreed in the chat.'],
+  ['How many campaigns can I apply to?', 'As many as you like. If you are picked for two campaigns on overlapping dates, the brand gets a heads-up before confirming, and you see it on the brief too.'],
   ['How do payments work?', 'During the pilot you agree the scope and price in a Smart Proposal and settle payment directly with each other. In-app payments are on our roadmap.'],
   ['What is PingScore?', 'A trust signal on every profile, based on verification, how complete the profile is, and activity on Ping.']
 ];
@@ -154,7 +158,7 @@ function markup({ skipIntro, touch }) {
             <span class="lp-line lp-line-serif"><em>One ping apart.</em></span>
           </h1>
           <div class="lp-hero-row">
-            <p class="lp-hero-sub">Ping matches neighbourhood businesses with the micro-creators their customers already follow, by place and by niche, with no agency in between.</p>
+            <p class="lp-hero-sub">Ping connects neighbourhood businesses with the creators, comedians, DJs and bands their customers already follow. Post a campaign, pick who you want, no agency in between.</p>
             <div class="lp-hero-ctas">
               ${btn('Find your match', { attrs: 'href="#choose" data-scroll="choose"' })}
               <a href="#how" class="lp-textlink" data-scroll="how">See how it works</a>
@@ -182,7 +186,7 @@ function markup({ skipIntro, touch }) {
             <div class="lp-facts" data-stagger>
               <div class="lp-fact"><span class="lp-fact-num">0%</span><span class="lp-fact-label">Commission for either side during the pilot</span></div>
               <div class="lp-fact"><span class="lp-fact-num">1K–<span data-count="300">300</span>K</span><span class="lp-fact-label">Followers. The micro &amp; nano creators Ping is built for</span></div>
-              <div class="lp-fact"><span class="lp-fact-num"><span data-count="4">4</span> steps</span><span class="lp-fact-label">From a first ping to a signed-off proposal</span></div>
+              <div class="lp-fact"><span class="lp-fact-num"><span data-count="4">4</span> steps</span><span class="lp-fact-label">From posting a campaign to chatting with your pick</span></div>
             </div>
           </div>
         </div>
@@ -196,7 +200,7 @@ function markup({ skipIntro, touch }) {
               <p class="lp-kicker"><b>(02)</b> Made for</p>
               <h2 class="lp-h2" data-split>Every kind of <em>local business.</em></h2>
             </div>
-            <p class="lp-gallery-intro" data-lines>From the café on the corner to the salon across the road: a few ideas for what brands and creators can make together.</p>
+            <p class="lp-gallery-intro" data-lines>From the café on the corner to the bar down the road: a few ideas for what brands and local talent can make together.</p>
           </div>
           <div class="lp-gallery-viewport">
             <div class="lp-gallery-track">
@@ -213,7 +217,7 @@ function markup({ skipIntro, touch }) {
                 <span class="lp-gcard-idx">${pad2(GALLERY.length + 1)}</span>
                 <span class="lp-gcard-cta-body">
                   <span class="lp-gcard-cta-title">Don't see <em>yours?</em></span>
-                  <span class="lp-gcard-cta-text">Ping works for any local business, and any creator nearby.</span>
+                  <span class="lp-gcard-cta-text">Ping works for any local business, and any creator or artist nearby.</span>
                   <span class="lp-gcard-cta-btn">Find your match ${ARROW}</span>
                 </span>
               </a>
@@ -231,7 +235,7 @@ function markup({ skipIntro, touch }) {
       <section class="lp-section lp-how" id="how">
         <div class="lp-container lp-grid lp-section-head">
           <p class="lp-kicker lp-col-side"><b>(03)</b> How it works</p>
-          <h2 class="lp-h2 lp-col-main" data-split>From first ping to <em>signed-off deal.</em></h2>
+          <h2 class="lp-h2 lp-col-main" data-split>Post it. Pick them. <em>Get it done.</em></h2>
         </div>
         <div class="lp-container lp-how-grid">
           <div class="lp-how-list">
@@ -274,7 +278,7 @@ function markup({ skipIntro, touch }) {
 
           <div class="lp-bento" id="lpPanelCreators" role="tabpanel" aria-labelledby="lpTabCreators" data-aud-panel="creators">
             <article class="lp-tile lp-tile-a">
-              <div class="lp-tile-copy"><h3>Your media kit, always ready</h3><p>Rates, niches and socials in one profile brands can browse. No more DM-ing PDFs.</p></div>
+              <div class="lp-tile-copy"><h3>Your media kit, always ready</h3><p>What you do, your numbers and your best work in one profile. It's what brands see when you apply.</p></div>
               <div class="lp-tile-visual">
                 <div class="mk">
                   <div class="mk-head"><span class="mk-av" ${bg(PHOTOS.simran)}></span><div><b>Simran K. <i class="ph-fill ph-seal-check"></i></b><span>Food &amp; café creator · Sector 17</span></div></div>
@@ -290,12 +294,12 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <article class="lp-tile lp-tile-b">
-              <div class="lp-tile-copy"><h3>Pitch live briefs</h3><p>Local brands post what they need. You pitch in a tap.</p></div>
+              <div class="lp-tile-copy"><h3>Apply in one tap</h3><p>Local brands post campaigns with the fee upfront. Apply to as many as you like.</p></div>
               <div class="lp-tile-visual">
                 <div class="brief">
-                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.brewLab)}></span><div><b>Cold brew launch</b><span>Brew Lab · Food &amp; Café</span></div><span class="brief-budget">₹5K–8K</span></div>
-                  <p>Looking for two local creators to shoot our new cold brew menu this month.</p>
-                  <div class="brief-foot"><span><i class="ph-fill ph-clock"></i> 6 days left</span><span class="brief-pitch"><i class="ph-fill ph-paper-plane-tilt"></i> Quick pitch</span></div>
+                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.brewLab)}></span><div><b>Cold brew launch</b><span>Brew Lab · Food &amp; Café</span></div><span class="brief-budget">₹6,000</span></div>
+                  <p>Looking for two local creators to shoot our new cold brew menu this month. Fixed fee, 1 Reel + 2 Stories.</p>
+                  <div class="brief-foot"><span><i class="ph-fill ph-users"></i> 2 slots open</span><span class="brief-pitch"><i class="ph-fill ph-paper-plane-tilt"></i> Apply</span></div>
                 </div>
               </div>
             </article>
@@ -317,7 +321,7 @@ function markup({ skipIntro, touch }) {
 
           <div class="lp-bento" id="lpPanelBrands" role="tabpanel" aria-labelledby="lpTabBrands" data-aud-panel="brands" hidden>
             <article class="lp-tile lp-tile-a">
-              <div class="lp-tile-copy"><h3>Find creators around you</h3><p>Discover micro-creators by neighbourhood and niche: the people your customers already follow.</p></div>
+              <div class="lp-tile-copy"><h3>Reach talent around you</h3><p>Your campaign goes to the creators, comedians, DJs and bands nearby: the people your customers already follow.</p></div>
               <div class="lp-tile-visual lp-tile-map">
                 <canvas class="lp-mini-map" aria-hidden="true"></canvas>
                 <span class="map-chip" style="--x:8%;--y:14%"><span ${bg(PHOTOS.meera)}></span>@meera.styles</span>
@@ -326,12 +330,12 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <article class="lp-tile lp-tile-b">
-              <div class="lp-tile-copy"><h3>Post a brief. Get pitches.</h3><p>Share your budget and what you need. Creators come to you.</p></div>
+              <div class="lp-tile-copy"><h3>Post it. Swipe who applied.</h3><p>Set a fixed fee and how many people you need. Right to pick, left to pass.</p></div>
               <div class="lp-tile-visual">
                 <div class="brief">
-                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.boutique)}></span><div><b>Festive collection drop</b><span>Hue Boutique · Fashion</span></div><span class="brief-budget">₹10K–15K</span></div>
+                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.boutique)}></span><div><b>Festive collection drop</b><span>Hue Boutique · Fashion</span></div><span class="brief-budget">₹8,000</span></div>
                   <div class="pitches">
-                    <span class="pitches-label">Pitches</span>
+                    <span class="pitches-label">Applicants</span>
                     <span class="pitch-stack"><span ${bg(PHOTOS.zoya)}></span><span ${bg(PHOTOS.meera)}></span><span ${bg(PHOTOS.kabir)}></span><span ${bg(PHOTOS.arjun)}></span></span>
                     <b class="pitch-new">4 new</b>
                   </div>
@@ -339,11 +343,11 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <article class="lp-tile lp-tile-c">
-              <div class="lp-tile-copy"><h3>Talk directly</h3><p>No account managers. Just you and the creator.</p></div>
+              <div class="lp-tile-copy"><h3>Every pick opens a chat</h3><p>No account managers. Just you and the people you picked.</p></div>
               <div class="lp-tile-visual">
                 <div class="chat-snip">
                   <span class="chat-in">Can you do a reel + stories by Friday?</span>
-                  <span class="chat-out">Done. I'll send my rate card now ✨</span>
+                  <span class="chat-out">Done. See you Saturday ✨</span>
                 </div>
               </div>
             </article>
@@ -354,7 +358,7 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <div class="lp-aud-cta">
-              <p>Free while we're in pilot. Post your first brief today.</p>
+              <p>Free while we're in pilot. Post your first campaign today.</p>
               ${btn('Join as a brand', { attrs: 'href="#" data-role-choice="brand"' })}
             </div>
           </div>
@@ -415,7 +419,7 @@ function markup({ skipIntro, touch }) {
             <span class="lp-panel-top"><span class="lp-kicker">For creators</span><span class="lp-panel-idx">A</span></span>
             <span class="lp-panel-bottom">
               <span class="lp-panel-title">I'm a <em>creator</em></span>
-              <span class="lp-panel-text" data-lines>Get paid to create for the places you already love.</span>
+              <span class="lp-panel-text" data-lines>Get booked by the places you already love.</span>
               <span class="lp-panel-cta"><span class="lp-panel-arrow">${ARROW}</span>Create my free account</span>
             </span>
           </button>
@@ -424,7 +428,7 @@ function markup({ skipIntro, touch }) {
             <span class="lp-panel-top"><span class="lp-kicker">For brands</span><span class="lp-panel-idx">B</span></span>
             <span class="lp-panel-bottom">
               <span class="lp-panel-title">I'm a <em>brand</em></span>
-              <span class="lp-panel-text" data-lines>Find the creators your customers already follow.</span>
+              <span class="lp-panel-text" data-lines>Find the talent your customers already follow.</span>
               <span class="lp-panel-cta"><span class="lp-panel-arrow">${ARROW}</span>Create my free account</span>
             </span>
           </button>

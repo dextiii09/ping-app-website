@@ -1,7 +1,13 @@
 // Ping Web Platform - State Store & Persistence Layer
-import { SEED_USERS, SEED_BRIEFS, SEED_MATCHES, SEED_ADMIN_STATS } from './mockData.js';
+import { SEED_USERS, SEED_BRIEFS, SEED_MATCHES, SEED_APPLICATIONS } from './mockData.js';
+import { briefWindow, windowsOverlap, formatWindow, formatINR, dateOnlyMs, campaignStatus, sameCity, selectedNote } from './campaignUtils.js';
+import { talentTypeOf, briefFitsTalent } from './talentTypes.js';
 
 const STORAGE_KEY = 'ping_platform_state_v1';
+// Bumped when the cached shape changes (v2: campaign matching flow), so an
+// older cache is ignored instead of mixing old and new seed data.
+const STATE_VERSION = 2;
+const clone = (v) => JSON.parse(JSON.stringify(v));
 
 class StateStore {
   constructor() {
@@ -14,29 +20,27 @@ class StateStore {
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        this.currentUser = parsed.currentUser || SEED_USERS[0];
-        this.users = parsed.users || SEED_USERS;
-        this.briefs = parsed.briefs || SEED_BRIEFS;
-        this.matches = parsed.matches || SEED_MATCHES;
-        this.adminStats = parsed.adminStats || SEED_ADMIN_STATS;
-        this.swipes = parsed.swipes || {}; // userId -> array of swiped candidate ids
-        this.activeBriefApplications = parsed.activeBriefApplications || {};
-        this.broadcasts = parsed.broadcasts || [];
-        this.notifications = []; // live-only, populated by loadNotifications() for real accounts
-        return;
+        if (parsed.version === STATE_VERSION) {
+          this.currentUser = parsed.currentUser || clone(SEED_USERS[0]);
+          this.users = parsed.users || clone(SEED_USERS);
+          this.briefs = parsed.briefs || clone(SEED_BRIEFS);
+          this.matches = parsed.matches || clone(SEED_MATCHES);
+          this.applications = parsed.applications || clone(SEED_APPLICATIONS);
+          this.broadcasts = parsed.broadcasts || [];
+          this.notifications = []; // live-only, populated by loadNotifications() for real accounts
+          return;
+        }
       } catch (e) {
         console.warn('Failed to parse cached state, restoring seeds', e);
       }
     }
 
-    // Default Fresh Seed
-    this.currentUser = SEED_USERS[0]; // Alex Vance (Creator)
-    this.users = [...SEED_USERS];
-    this.briefs = [...SEED_BRIEFS];
-    this.matches = [...SEED_MATCHES];
-    this.adminStats = { ...SEED_ADMIN_STATS };
-    this.swipes = {};
-    this.activeBriefApplications = {};
+    // Default fresh seed (deep copies, so demo changes never touch mockData)
+    this.currentUser = clone(SEED_USERS[0]);
+    this.users = clone(SEED_USERS);
+    this.briefs = clone(SEED_BRIEFS);
+    this.matches = clone(SEED_MATCHES);
+    this.applications = clone(SEED_APPLICATIONS);
     this.notifications = [];
     this.broadcasts = [
       {
@@ -52,13 +56,12 @@ class StateStore {
   save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: STATE_VERSION,
         currentUser: this.currentUser,
         users: this.users,
         briefs: this.briefs,
         matches: this.matches,
-        adminStats: this.adminStats,
-        swipes: this.swipes,
-        activeBriefApplications: this.activeBriefApplications,
+        applications: this.applications,
         broadcasts: this.broadcasts
       }));
     } catch (e) {
@@ -82,7 +85,7 @@ class StateStore {
     this.notify();
   }
 
-  // Real accounts (Firebase Auth + Firestore `users/{uid}` profile)
+  // Real accounts (Supabase Auth + their `profiles` row)
   hydrateRealUser(profile) {
     this.currentUser = profile;
     // Strip any previously-loaded real (non-seed) candidate profiles before
@@ -106,43 +109,39 @@ class StateStore {
     this.isRealAccount = true;
     this.realCandidateIds = new Set();
     this.blockedUserIds = new Set();
+    this.applications = [];
     this.save();
     this.loadRealBriefs();
     this.loadRealMatches();
     this.loadRealDiscoveryCandidates();
     this.loadBlockedUsers();
     this.loadNotifications();
-    this.loadMyActivity();
+    this.loadApplications();
   }
 
-  // Who you've already swiped and which briefs you've pitched on live in the
-  // database, not just this browser's cache - so a new device (or a cleared
-  // cache) doesn't show people you've passed on, or let you pitch twice.
-  // Demo profiles are only ever swiped locally, so those are kept as-is.
-  async loadMyActivity() {
-    const uid = this.currentUser.id;
+  // Campaign applications this account can see: a talent's own, or every
+  // application to a brand's campaigns (RLS scopes the query). Live, so a
+  // brand sees new applicants and a talent sees decisions as they happen.
+  async loadApplications() {
+    if (!['BUSINESS', 'INFLUENCER'].includes(this.currentUser.role)) return;
     try {
-      const [{ fetchMySwipedIds }, { fetchMyPitches }] = await Promise.all([
-        import('./matchService.js'), import('./briefsService.js')
-      ]);
-      const [swipedIds, pitches] = await Promise.all([fetchMySwipedIds(uid), fetchMyPitches(uid)]);
-      if (this.currentUser.id !== uid) return;
-      this.swipes[uid] = [...new Set([...(this.swipes[uid] || []), ...swipedIds])];
-      pitches.forEach((p) => {
-        this.activeBriefApplications[`${uid}_${p.briefId}`] = { pitchMessage: p.pitch, rate: p.rate, timestamp: p.timestamp };
+      const { subscribeToApplications } = await import('./briefsService.js');
+      if (this.unsubscribeApplications) this.unsubscribeApplications();
+      this.unsubscribeApplications = subscribeToApplications((apps) => {
+        this.applications = apps;
+        this.notify();
       });
-      this.save();
     } catch (err) {
-      console.error('Failed to load swipe/pitch history:', err);
+      console.error('Failed to load applications:', err);
     }
   }
 
   // Live-subscribes to OTHER real users' discoverable profiles
   // (public_profiles collection - see discoveryService.js for why this is
   // separate from users/{uid}) and merges them into the local candidate
-  // pool alongside the mock seed users, so getDiscoveryCandidates() keeps
-  // working unchanged. Also what makes the admin verification queue update
-  // live, since opsPlatform.js reads store.users directly.
+  // member list alongside the demo profiles (applicant cards, chat partners).
+  // Also what makes the admin verification queue update live, since
+  // opsPlatform.js reads store.users directly.
   async loadRealDiscoveryCandidates() {
     try {
       const { subscribeToDiscoverableProfiles } = await import('./discoveryService.js');
@@ -161,12 +160,12 @@ class StateStore {
     }
   }
 
-  // Replaces the mock-seeded matches list with a LIVE subscription to
-  // Firestore `matches` (array-contains query on the current uid) - a new
+  // Replaces the mock-seeded matches list with a LIVE subscription to the
+  // `matches` the current user is part of - a new
   // match, or a lastMessage/lastActive change on an existing one, updates
   // the list automatically. Messages are NOT included here - they're
   // subscribed to lazily per-match via loadMessagesForMatch when a
-  // conversation is actually opened, matching the subcollection shape.
+  // conversation is actually opened.
   async loadRealMatches() {
     try {
       const { subscribeToMatches } = await import('./matchService.js');
@@ -180,7 +179,7 @@ class StateStore {
         this.notify();
       });
     } catch (err) {
-      console.error('Failed to subscribe to matches from Firestore:', err);
+      console.error('Failed to subscribe to matches:', err);
     }
   }
 
@@ -236,10 +235,8 @@ class StateStore {
     });
   }
 
-  // Creates a Smart Proposal. Real accounts get a flat proposal (title,
-  // price, deadline, description) written to the real `proposals` collection
-  // - there is no validated milestones schema server-side yet. Mock/demo
-  // accounts keep the full milestone-breakdown behavior for the visual demo.
+  // Creates a Smart Proposal: title, price, deadline and description. The
+  // person it's sent to accepts or declines it (respondToProposal).
   async createProposal(matchId, receiverId, proposalFields) {
     if (this.isRealAccount) {
       const { createProposalRemote } = await import('./matchService.js');
@@ -251,18 +248,13 @@ class StateStore {
     const proposalData = {
       id: `prop_${Date.now()}`,
       ...proposalFields,
-      status: 'PENDING',
-      milestones: [
-        { id: 'm1', title: 'Concept & Creative Direction', amount: '30%', status: 'PAID' },
-        { id: 'm2', title: 'First Rough Cut Review', amount: '40%', status: 'UNDER_REVIEW' },
-        { id: 'm3', title: 'Final Publish & Live Metrics', amount: '30%', status: 'LOCKED' }
-      ]
+      status: 'PENDING'
     };
     return this.sendMessage(matchId, `Smart Proposal Created: ${proposalFields.title}`, 'proposal', proposalData);
   }
 
-  // Trust & safety: loads who the current real account has blocked, so
-  // getDiscoveryCandidates() can exclude them. Blocking is local to the
+  // Trust & safety: loads who the current real account has blocked.
+  // Blocking is local to the
   // blocker (see discoveryService.blockUser) - it doesn't touch the other
   // user's view of anything.
   async loadBlockedUsers() {
@@ -351,128 +343,30 @@ class StateStore {
     }
   }
 
-  // Discovery & Swiping
-  getDiscoveryCandidates() {
-    const currentRole = this.currentUser.role;
-    const swipedIds = this.swipes[this.currentUser.id] || [];
-    const blockedIds = this.blockedUserIds || new Set();
-    // Already matched: they're in the Deal Room, and pinging them again would
-    // send them a second "You matched" notification.
-    const matchedIds = new Set(this.matches.filter(m => m.users.includes(this.currentUser.id)).flatMap(m => m.users));
-
-    return this.users.filter(u => {
-      if (u.id === this.currentUser.id) return false;
-      if (u.status === 'BANNED') return false;
-      if (swipedIds.includes(u.id)) return false;
-      if (blockedIds.has(u.id)) return false;
-      if (matchedIds.has(u.id)) return false;
-
-      // Businesses discover Influencers; Influencers discover Businesses; Admins see all
-      if (currentRole === 'BUSINESS') return u.role === 'INFLUENCER';
-      if (currentRole === 'INFLUENCER') return u.role === 'BUSINESS';
-      return true;
-    });
-  }
-
-  async recordSwipe(candidateId, direction) {
-    if (!this.swipes[this.currentUser.id]) {
-      this.swipes[this.currentUser.id] = [];
-    }
-    this.swipes[this.currentUser.id].push(candidateId);
-
-    if (this.isRealAccount) {
-      const candidate = this.users.find(u => u.id === candidateId);
-      // Demo profiles have no account behind them: the swipe only moves the deck on.
-      if (candidate?.isDemo) {
-        this.save();
-        return false;
-      }
-      try {
-        const { recordSwipeRemote } = await import('./matchService.js');
-        const { matched, matchId } = await recordSwipeRemote(this.currentUser.id, candidateId, direction);
-
-        if (matched) {
-          const newMatch = {
-            id: matchId,
-            users: [this.currentUser.id, candidateId],
-            otherUser: candidate,
-            lastMessage: direction === 'UP' ? '⚡ Super-Pinged you!' : 'Connected on Ping',
-            lastSenderId: this.currentUser.id,
-            lastActive: Date.now(),
-            messages: []
-          };
-          const idx = this.matches.findIndex(m => m.id === matchId);
-          if (idx === -1) this.matches.unshift(newMatch); else this.matches[idx] = newMatch;
-        }
-
-        this.save();
-        return matched;
-      } catch (err) {
-        // Nothing was saved: undo the optimistic swipe so the card comes
-        // back, and let the caller tell the user.
-        const list = this.swipes[this.currentUser.id];
-        const i = list.lastIndexOf(candidateId);
-        if (i !== -1) list.splice(i, 1);
-        this.save();
-        throw err;
-      }
-    }
-
-    // Mock/demo path
-    let matched = false;
-    if (direction === 'RIGHT' || direction === 'UP') {
-      const candidate = this.users.find(u => u.id === candidateId);
-      if (candidate) {
-        const existing = this.matches.find(m =>
-          m.users.includes(this.currentUser.id) && m.users.includes(candidateId)
-        );
-
-        if (!existing) {
-          const newMatch = {
-            id: `match_${Date.now()}`,
-            users: [this.currentUser.id, candidateId],
-            otherUser: candidate,
-            lastMessage: direction === 'UP' ? '⚡ Super-Pinged you!' : 'Connected on Ping',
-            lastSenderId: this.currentUser.id,
-            lastActive: Date.now(),
-            aiMatchReason: "95% Match: Verified high affinity in complementary niches.",
-            messages: [
-              {
-                id: `msg_init_${Date.now()}`,
-                senderId: this.currentUser.id,
-                text: direction === 'UP' ? '⚡ Sent a Super-Ping! High-priority partnership interest.' : 'Hi! Loved your profile, let\'s connect.',
-                timestamp: Date.now(),
-                read: true,
-                type: 'text'
-              }
-            ]
-          };
-          this.matches.unshift(newMatch);
-          matched = true;
-        }
-      }
-    }
-
-    this.save();
-    return matched;
-  }
-
-  // Live Briefs
-  async createBrief(briefData) {
+  // Campaign briefs (spec: title, description, deliverables, a fixed fee per
+  // talent, slots, talent type, niche + location, deadline / event date).
+  async createBrief(data) {
+    const endsOn = dateOnlyMs(data.endsOn);
+    const deadline = new Date(endsOn);
+    deadline.setHours(23, 59, 59, 0);
     const newBrief = {
       brandId: this.currentUser.id,
       brandName: this.currentUser.company || this.currentUser.name,
       brandAvatar: this.currentUser.avatar,
-      title: briefData.title,
-      description: briefData.description,
-      budget: briefData.budget.startsWith('₹') ? briefData.budget : `₹${briefData.budget}`,
-      // Ping is local: a brief is for creators near the brand unless it says otherwise.
-      location: briefData.location || this.currentUser.location || '',
-      deadline: Date.now() + (parseInt(briefData.days || 14) * 24 * 60 * 60 * 1000),
-      tags: briefData.tags || ['Partnership'],
-      requirements: briefData.requirements || [],
-      requiredVideos: parseInt(briefData.requiredVideos || 1),
-      requiredStories: parseInt(briefData.requiredStories || 2),
+      title: data.title,
+      description: data.description,
+      deliverables: data.deliverables,
+      budget: formatINR(data.fee),
+      location: data.location || this.currentUser.location || '',
+      deadline: deadline.getTime(),
+      startsOn: data.startsOn ? dateOnlyMs(data.startsOn) : null,
+      endsOn,
+      tags: data.tags || [],
+      requirements: [],
+      talentType: data.talentType || 'ANY',
+      slots: Math.max(1, Math.min(50, parseInt(data.slots, 10) || 1)),
+      slotsFilled: 0,
+      status: 'OPEN',
       applicationsCount: 0,
       timestamp: Date.now()
     };
@@ -485,51 +379,198 @@ class StateStore {
       return saved;
     }
 
-    const mockBrief = { id: `brief_${Date.now()}`, ...newBrief };
-    this.briefs.unshift(mockBrief);
+    const demoBrief = { id: `brief_${Date.now()}`, ...newBrief };
+    this.briefs.unshift(demoBrief);
     this.save();
-    return mockBrief;
+    return demoBrief;
   }
 
-  // Saves the pitch first and only then marks it as sent, so a failed save
-  // can't show "pitch sent". Resolves { alreadyPitched: true } when the
-  // database already has a pitch from this creator on this brief.
-  async applyToBrief(briefId, pitchMessage, rate) {
-    const key = `${this.currentUser.id}_${briefId}`;
-    const brief = this.briefs.find(b => b.id === briefId);
-    let alreadyPitched = false;
+  getBrief(briefId) {
+    return this.briefs.find(b => b.id === briefId)
+      || this.applications.find(a => a.briefId === briefId && a.brief)?.brief
+      || null;
+  }
+
+  // A brand's own campaigns, newest first.
+  getMyCampaigns() {
+    return this.briefs.filter(b => b.brandId === this.currentUser.id)
+      .sort((x, y) => (y.timestamp || 0) - (x.timestamp || 0));
+  }
+
+  // Briefs a talent can apply to: made for their talent type (or open to
+  // all) and still taking applications. Same city first, then newest.
+  getOpenBriefsForTalent() {
+    const me = this.currentUser;
+    const type = talentTypeOf(me);
+    return this.briefs
+      .filter(b => b.brandId !== me.id && campaignStatus(b) === 'OPEN' && briefFitsTalent(b.talentType, type))
+      .sort((x, y) => (sameCity(y.location, me.location) - sameCity(x.location, me.location))
+        || ((y.timestamp || 0) - (x.timestamp || 0)));
+  }
+
+  getApplication(briefId, creatorId = this.currentUser.id) {
+    return this.applications.find(a => a.briefId === briefId && a.creatorId === creatorId) || null;
+  }
+
+  hasAppliedToBrief(briefId) {
+    return !!this.getApplication(briefId);
+  }
+
+  // A talent's own applications, newest first, each with its brief.
+  getMyApplications() {
+    return this.applications.filter(a => a.creatorId === this.currentUser.id)
+      .map(a => ({ ...a, brief: this.briefs.find(b => b.id === a.briefId) || a.brief }))
+      .filter(a => a.brief)
+      .sort((x, y) => y.createdAt - x.createdAt);
+  }
+
+  // Everyone who applied to one campaign, first applied first (the swipe
+  // deck order), each with their profile.
+  getApplicantsForBrief(briefId) {
+    return this.applications.filter(a => a.briefId === briefId)
+      .map(a => ({ ...a, profile: a.profile || this.users.find(u => u.id === a.creatorId) || null }))
+      .filter(a => a.profile)
+      .sort((x, y) => x.createdAt - y.createdAt);
+  }
+
+  // Applicants still waiting on the brand's live campaigns (nav badge).
+  pendingApplicantsCount() {
+    const live = new Set(this.getMyCampaigns().filter(b => campaignStatus(b) === 'OPEN').map(b => b.id));
+    return this.applications.filter(a => a.status === 'PENDING' && live.has(a.briefId)).length;
+  }
+
+  // The talent's accepted campaigns whose dates overlap this brief.
+  getScheduleConflicts(creatorId, brief) {
+    const win = briefWindow(brief);
+    return this.applications
+      .filter(a => a.creatorId === creatorId && a.status === 'SELECTED' && a.briefId !== brief.id)
+      .map(a => this.briefs.find(b => b.id === a.briefId) || a.brief)
+      .filter(b => b && windowsOverlap(briefWindow(b), win));
+  }
+
+  // Apply to a campaign with an optional pitch note (the fee is fixed, so
+  // there's no rate). Saved first, then shown as applied. Resolves
+  // { alreadyApplied } when the database already had this application.
+  async applyToBrief(briefId, pitch = '') {
+    const brief = this.getBrief(briefId);
+    let alreadyApplied = false;
 
     if (this.isRealAccount && !brief?.isDemo) {
       const { applyToBriefRemote } = await import('./briefsService.js');
       try {
-        await applyToBriefRemote(briefId, this.currentUser.id, pitchMessage, rate);
+        await applyToBriefRemote(briefId, this.currentUser.id, pitch);
       } catch (err) {
-        if (err?.code !== '23505') throw err; // 23505: unique violation, one pitch per brief
-        alreadyPitched = true;
+        if (err?.code !== '23505') throw err; // 23505: one application per brief
+        alreadyApplied = true;
       }
     }
 
-    this.activeBriefApplications[key] = {
-      pitchMessage,
-      rate,
-      timestamp: Date.now()
-    };
-
-    if (!alreadyPitched) {
-      this.briefs = this.briefs.map(b => {
-        if (b.id === briefId) {
-          return { ...b, applicationsCount: (b.applicationsCount || 0) + 1 };
-        }
-        return b;
-      });
+    if (!this.getApplication(briefId)) {
+      this.applications = [...this.applications, {
+        briefId, creatorId: this.currentUser.id, pitch, status: 'PENDING',
+        createdAt: Date.now(), decidedAt: null, matchId: null, brief
+      }];
+      if (!alreadyApplied) {
+        this.briefs = this.briefs.map(b => b.id === briefId ? { ...b, applicationsCount: (b.applicationsCount || 0) + 1 } : b);
+      }
     }
 
     this.save();
-    return { alreadyPitched };
+    return { alreadyApplied };
   }
 
-  hasAppliedToBrief(briefId) {
-    return !!this.activeBriefApplications[`${this.currentUser.id}_${briefId}`];
+  // The brand's swipe on an applicant: 'SELECT' (right) or 'REJECT' (left).
+  // Real campaigns go through decide_application() on the server, which
+  // fills the slot, checks the talent's dates, opens the chat and, once the
+  // last slot is filled, auto-rejects everyone still waiting. Resolves its
+  // result: { status: SELECTED | REJECTED | CONFLICT | FULL | ALREADY_DECIDED }.
+  async decideApplicant(briefId, creatorId, decision, { confirmConflict = false } = {}) {
+    const brief = this.getBrief(briefId);
+    if (!brief) throw new Error('Campaign not found');
+    let res;
+
+    if (this.isRealAccount && !brief.isDemo) {
+      const { decideApplicationRemote } = await import('./briefsService.js');
+      res = await decideApplicationRemote(briefId, creatorId, decision, confirmConflict);
+      if (res?.conflicts) {
+        res.conflicts = res.conflicts.map(c => ({
+          title: c.title,
+          window: formatWindow({ startsOn: dateOnlyMs(c.starts_on), endsOn: dateOnlyMs(c.ends_on) })
+        }));
+      }
+    } else {
+      const clashes = decision === 'SELECT' ? this.getScheduleConflicts(creatorId, brief) : [];
+      if (clashes.length && !confirmConflict) {
+        res = { status: 'CONFLICT', conflicts: clashes.map(b => ({ title: b.title, window: formatWindow(b) })) };
+      } else {
+        res = this.decideLocally(briefId, creatorId, decision);
+        if (res.status === 'SELECTED' && clashes.length) res.conflict_overridden = true;
+      }
+    }
+
+    this.applyDecision(briefId, creatorId, res);
+    return res;
+  }
+
+  // Demo campaigns: the same rules as decide_application(), locally.
+  decideLocally(briefId, creatorId, decision) {
+    const brief = this.getBrief(briefId);
+    const app = this.getApplication(briefId, creatorId);
+    if (!app) throw new Error('Application not found');
+    if (app.status !== 'PENDING') return { status: 'ALREADY_DECIDED', application_status: app.status };
+    if (decision === 'REJECT') return { status: 'REJECTED' };
+    if (brief.status !== 'OPEN' || (brief.slotsFilled || 0) >= brief.slots) return { status: 'FULL' };
+
+    const note = {
+      id: `msg_sys_${Date.now()}`, senderId: this.currentUser.id, text: selectedNote(brief),
+      type: 'system', timestamp: Date.now(), read: true
+    };
+    let match = this.matches.find(m => m.users.includes(this.currentUser.id) && m.users.includes(creatorId));
+    if (match) {
+      this.matches = this.matches.map(m => m.id === match.id
+        ? { ...m, messages: [...(m.messages || []), note], lastMessage: note.text, lastSenderId: note.senderId, lastActive: note.timestamp }
+        : m);
+    } else {
+      match = { id: `match_${Date.now()}`, users: [this.currentUser.id, creatorId], messages: [note], lastMessage: note.text, lastSenderId: note.senderId, lastActive: note.timestamp };
+      this.matches = [match, ...this.matches];
+    }
+
+    const filled = (brief.slotsFilled || 0) + 1;
+    const autoRejected = filled >= brief.slots
+      ? this.applications.filter(a => a.briefId === briefId && a.status === 'PENDING' && a.creatorId !== creatorId).length
+      : 0;
+    return { status: 'SELECTED', match_id: match.id, slots: brief.slots, slots_filled: filled, auto_rejected: autoRejected };
+  }
+
+  // Mirror a decision in local state straight away (for real campaigns the
+  // live subscriptions confirm it a moment later).
+  applyDecision(briefId, creatorId, res) {
+    if (!res || !['SELECTED', 'REJECTED'].includes(res.status)) return;
+    const now = Date.now();
+    const brief = this.getBrief(briefId);
+
+    if (res.status === 'REJECTED') {
+      this.applications = this.applications.map(a => a.briefId === briefId && a.creatorId === creatorId
+        ? { ...a, status: 'REJECTED', decidedAt: now } : a);
+    } else {
+      const filled = res.slots_filled ?? ((brief.slotsFilled || 0) + 1);
+      const full = filled >= (res.slots ?? brief.slots);
+      this.briefs = this.briefs.map(b => b.id === briefId ? { ...b, slotsFilled: filled, status: full ? 'FILLED' : b.status } : b);
+      this.applications = this.applications.map(a => {
+        if (a.briefId !== briefId) return a;
+        if (a.creatorId === creatorId) return { ...a, status: 'SELECTED', decidedAt: now, matchId: res.match_id || a.matchId };
+        return full && a.status === 'PENDING' ? { ...a, status: 'AUTO_REJECTED', decidedAt: now } : a;
+      });
+      // The chat is open now: list it in the Deal Room even before the live
+      // match subscription delivers it.
+      if (res.match_id && !this.matches.some(m => m.id === res.match_id)) {
+        this.matches = [{
+          id: res.match_id, users: [this.currentUser.id, creatorId], lastMessage: selectedNote(brief),
+          lastSenderId: this.currentUser.id, lastActive: now, messages: []
+        }, ...this.matches];
+      }
+    }
+    this.save();
   }
 
   // Messaging & Proposals
@@ -588,56 +629,52 @@ class StateStore {
     return newMsg;
   }
 
-  signAndAcceptProposal(matchId, messageId, signatureName) {
+  // The person a Smart Proposal was sent to accepts or declines it. It's a
+  // written record of what both sides agreed; payment is arranged between
+  // them, outside Ping. A note in the chat shows the reply to both sides.
+  async respondToProposal(matchId, messageId, response) {
     const match = this.matches.find(m => m.id === matchId);
-    if (!match) return;
+    const msg = match?.messages?.find(m => m.id === messageId);
+    const prop = msg?.proposalData;
+    if (!prop) throw new Error('Proposal not found');
+    let status = response;
 
-    const msg = match.messages.find(m => m.id === messageId);
-    if (!msg || !msg.proposalData) return;
+    if (this.isRealAccount && !String(prop.id || '').startsWith('prop_')) {
+      const { respondToProposalRemote } = await import('./matchService.js');
+      const res = await respondToProposalRemote(prop.id, response);
+      status = res?.status || response;
+    } else {
+      match.messages = [...match.messages, {
+        id: `msg_sys_${Date.now()}`, senderId: this.currentUser.id, type: 'system', timestamp: Date.now(), read: true,
+        text: `${this.currentUser.name} ${response === 'ACCEPTED' ? 'accepted' : 'declined'} the Smart Proposal: ${prop.title}`
+      }];
+    }
 
-    msg.proposalData.status = 'ACCEPTED';
-    msg.proposalData.creatorSignature = signatureName || this.currentUser.name;
-    
-    // Add confirmation message
-    match.messages.push({
-      id: `msg_signed_${Date.now()}`,
-      senderId: this.currentUser.id,
-      text: `✅ Proposal accepted by ${msg.proposalData.creatorSignature}.`,
-      timestamp: Date.now(),
-      read: true,
-      type: 'text'
-    });
-
-    match.lastMessage = `Proposal Accepted & Signed`;
-    match.lastActive = Date.now();
-
+    match.messages = match.messages.map(m => m.id === messageId ? { ...m, proposalData: { ...m.proposalData, status } } : m);
     this.save();
+    return status;
   }
 
-  updateMilestoneStatus(matchId, messageId, milestoneId, newStatus, contentUrl = null) {
-    const match = this.matches.find(m => m.id === matchId);
-    if (!match) return;
+  // Profile photo: square-cropped and shrunk, uploaded (real accounts) and
+  // saved to the profile. The replaced photo file is cleaned up afterwards.
+  async updateAvatar(file) {
+    const { toAvatarJpeg, blobToDataUrl } = await import('./imageUtils.js');
+    const blob = await toAvatarJpeg(file);
+    if (!this.isRealAccount) {
+      await this.updateCurrentUserProfile({ avatar: await blobToDataUrl(blob) });
+      return;
+    }
+    const { uploadAvatar, removeAvatarFile } = await import('./authService.js');
+    const previous = this.currentUser.avatar;
+    const url = await uploadAvatar(this.currentUser.id, blob);
+    await this.updateCurrentUserProfile({ avatar: url });
+    removeAvatarFile(this.currentUser.id, previous).catch(() => {});
+  }
 
-    const msg = match.messages.find(m => m.id === messageId);
-    if (!msg || !msg.proposalData || !msg.proposalData.milestones) return;
-
-    const milestone = msg.proposalData.milestones.find(m => m.id === milestoneId);
-    if (!milestone) return;
-
-    milestone.status = newStatus;
-    if (contentUrl) milestone.contentUrl = contentUrl;
-
-    // Send milestone alert
-    match.messages.push({
-      id: `msg_mile_${Date.now()}`,
-      senderId: this.currentUser.id,
-      text: `📌 Milestone status updated: "${milestone.title}" is now [${newStatus}].`,
-      timestamp: Date.now(),
-      read: true,
-      type: 'text'
-    });
-
-    this.save();
+  // Ask the Ping team to verify this profile (UNVERIFIED/REJECTED -> PENDING,
+  // the only change the database lets members make to it themselves).
+  async requestVerification() {
+    await this.updateCurrentUserProfile({ verificationStatus: 'PENDING' });
   }
 
   // Admin Actions: saved to the member's real profile first (schema.sql only
@@ -680,15 +717,29 @@ class StateStore {
     this.save();
   }
 
-  postBroadcast(title, body) {
-    const bcast = {
-      id: `bcast_${Date.now()}`,
-      title,
-      body,
-      timestamp: Date.now()
-    };
-    this.broadcasts.unshift(bcast);
+  // Ping-team announcement to every active member (admin). Real accounts go
+  // through admin_broadcast(); resolves { recipients }.
+  async sendAnnouncement(title, body) {
+    if (this.isRealAccount) {
+      const { sendAnnouncement } = await import('./adminService.js');
+      const res = await sendAnnouncement(title, body);
+      this.announcements = [{ id: res?.id || `a_${Date.now()}`, title, body, timestamp: Date.now() }, ...(this.announcements || [])];
+      this.notify();
+      return { recipients: res?.recipients ?? 0 };
+    }
+    this.broadcasts.unshift({ id: `bcast_${Date.now()}`, title, body, timestamp: Date.now() });
     this.save();
+    return { recipients: this.users.filter(u => !u.isDemo && u.id !== this.currentUser.id).length };
+  }
+
+  async loadAnnouncements() {
+    if (!this.isRealAccount) {
+      this.announcements = this.broadcasts || [];
+      return this.announcements;
+    }
+    const { fetchAnnouncements } = await import('./adminService.js');
+    this.announcements = await fetchAnnouncements(10);
+    return this.announcements;
   }
 }
 

@@ -1,5 +1,5 @@
 // Escapes user-controlled text before it is interpolated into an innerHTML
-// template string. Firestore rules validate field TYPE and length, not
+// template string. The database checks field types and lengths, not
 // content, so any string field a user can write (name, bio, tags, messages,
 // brief text, company, etc.) can contain arbitrary HTML/script unless every
 // render site escapes it here first.

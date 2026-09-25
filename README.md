@@ -12,16 +12,17 @@ Live at **https://pingapp.site**
 
 - **Landing page:** scroll-driven story (GSAP + Lenis) ending in "I'm a creator" / "I'm a brand".
 - **Sign-up and log-in:** email (with confirmation) or Google / Facebook, then role, location and niches.
-- **Explore & Match:** a swipe deck and a grid of nearby creators or brands. The match score is explainable and comes only from real signals: shared niches, same city, verification, listed rates.
-- **Campaign Briefs:** brands post briefs, creators pitch with a rate.
-- **Deal Room:** chat between matched members, plus Smart Proposals (a written offer: title, price, deadline). There are no in-app payments or escrow.
-- **Media Kit:** profile, rate card and self-reported audience figures, with a printable / PDF view.
-- **Operations (admin):** approve or decline verification requests, suspend or reactivate members.
+- **Campaigns (brands):** post a campaign with a fixed fee per person, the number of slots, the talent type (influencer, comedian, DJ, band or artist), deliverables and the deadline / event date. Then review applicants one card at a time: swipe right to select (fills a slot and opens a chat straight away), left to pass. When every slot is filled, everyone still waiting is told the campaign is filled. If a pick is already booked on overlapping dates, the brand is asked first.
+- **Discover (talent):** open campaigns for your talent type, nearest first. The fee is fixed and shown upfront; apply in one tap with an optional pitch note, to as many campaigns as you like.
+- **My applications (talent):** waiting, selected (with the chat), not selected.
+- **Deal Room:** chat, opened by a selection, plus Smart Proposals (a written offer: title, price, deadline) that the other side accepts or declines, with the reply noted in the chat. There are no in-app payments or escrow.
+- **Media Kit:** profile photo, talent type with type-specific details (genres and gigs for DJs, show reel for comedians, ...), past-work links, audience figures, a "get verified" request, printable / PDF view.
+- **Operations (admin):** verification requests (with the member's links to check), announcements to every member (in-app notification, plus email if set up), suspend or reactivate members.
 
 ## Tech
 
 - Static site: vanilla JavaScript ES modules, no build step.
-- [Supabase](https://supabase.com): Auth, Postgres with row-level security, Realtime, Edge Functions.
+- [Supabase](https://supabase.com): Auth, Postgres with row-level security, Realtime, Storage (profile photos), Edge Functions.
 - Hosted on [Vercel](https://vercel.com). `vercel.json` sets the security headers (including the Content-Security-Policy), and `.vercelignore` keeps non-site files out of the deploy.
 
 ```
@@ -29,7 +30,9 @@ index.html              app shell + routing (landing, #login, #join-creator, #jo
 privacy.html, terms.html
 assets/js/              state.js, platform.js, *Service.js, views/, landing/
 assets/css/             landing.css, platform.css, app-theme.css
-supabase/schema.sql     tables, RLS policies, triggers, record_swipe()
+supabase/schema.sql     tables, RLS policies, triggers
+supabase/campaign_matching.sql   talent types, slots, applications, decide_application()
+supabase/extras.sql     profile photos, announcements, proposal replies
 supabase/functions/     generate-ai-text, send-notification-email
 ```
 
@@ -53,7 +56,12 @@ Pushing to `master` deploys to Vercel automatically.
 
 ## Supabase setup
 
-1. Run `supabase/schema.sql` in the Supabase SQL Editor.
+1. In the Supabase SQL Editor, run in this order:
+   - `supabase/schema.sql` (tables, policies, triggers);
+   - `supabase/campaign_matching.sql` (campaign matching flow: talent types, slots, application statuses and `decide_application()`);
+   - `supabase/extras.sql` (the `avatars` storage bucket for profile photos, announcements with `admin_broadcast()`, and proposal replies with `respond_to_proposal()`).
+
+   The last two are safe to run again.
 2. Create the admin: sign up with the admin email, then run `supabase/admin_setup.sql`.
 3. Optional email notifications: follow the comments in `supabase/email_notifications.sql` and `supabase/functions/send-notification-email`.
 4. Ping AI: `supabase functions deploy generate-ai-text` and `supabase secrets set GEMINI_API_KEY=...`. Until then the app falls back to built-in text.

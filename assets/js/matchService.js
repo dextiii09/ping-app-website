@@ -1,29 +1,14 @@
-// Ping Web Platform - Matching, Deal Room Chat & Proposals (Supabase)
-//   record_swipe()  - SQL function: stores the swipe and, if the other person
-//                     already swiped RIGHT/UP, creates the match atomically
-//                     and notifies them (replaces the client-side handshake).
+// Ping Web Platform - Deal Room chat & Smart Proposals (Supabase)
+//   matches - created when a brand selects someone for a campaign
+//             (decide_application() in campaign_matching.sql).
 //   matches / messages / proposals - RLS limits each to its participants.
 //   A trigger on messages bumps the match preview and notifies the recipient.
 //
-// "Sign & Accept Proposal" and milestone escrow are intentionally still not
-// wired: proposals are admin-update-only until a real contract design exists.
+// Proposals are a written record: the person a proposal was sent to can
+// accept or decline it (respond_to_proposal() in extras.sql). There is no
+// signing, escrow or payment.
 import { supabase, watchTable } from './supabaseClient.js';
 import { matchFromRow, messageFromRow, proposalFromRow } from './mappers.js';
-
-export async function recordSwipeRemote(myUid, targetUid, direction) {
-  const { data, error } = await supabase.rpc('record_swipe', { p_target: targetUid, p_direction: direction });
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  return { matched: !!row?.matched, matchId: row?.match_id || null };
-}
-
-// Everyone this user has already swiped on, in any direction (RLS only
-// returns the caller's own swipes).
-export async function fetchMySwipedIds(uid) {
-  const { data, error } = await supabase.from('swipes').select('target_id').eq('swiper_id', uid);
-  if (error) throw error;
-  return data.map(r => r.target_id);
-}
 
 export async function fetchMatchesForUser(uid) {
   const { data, error } = await supabase.from('matches').select('*')
@@ -77,7 +62,7 @@ export async function sendMessageRemote(matchId, senderId, text, type = 'text', 
   return messageFromRow(data);
 }
 
-// Flat proposal (no milestones schema yet - see header comment).
+// A proposal is its title, price, deadline and description.
 export async function createProposalRemote(matchId, senderId, receiverId, proposal) {
   const { data, error } = await supabase.from('proposals').insert({
     match_id: matchId,
@@ -91,6 +76,13 @@ export async function createProposalRemote(matchId, senderId, receiverId, propos
   }).select('id').single();
   if (error) throw error;
   return { id: data.id };
+}
+
+// Accept or decline a proposal sent to you. Resolves { status, changed }.
+export async function respondToProposalRemote(proposalId, response) {
+  const { data, error } = await supabase.rpc('respond_to_proposal', { p_proposal: proposalId, p_response: response });
+  if (error) throw error;
+  return data;
 }
 
 export async function fetchProposal(proposalId) {

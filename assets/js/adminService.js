@@ -18,3 +18,18 @@ export function setVerification(uid, approve) {
 export function setMemberStatus(uid, status) {
   return updateMember(uid, { status });
 }
+
+// Announcement to every active member's notifications (admin_broadcast() in
+// supabase/extras.sql). Resolves { id, recipients }.
+export async function sendAnnouncement(title, body) {
+  const { data, error } = await supabase.rpc('admin_broadcast', { p_title: title, p_body: body });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchAnnouncements(limit = 10) {
+  const { data, error } = await supabase.from('announcements').select('*')
+    .order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data.map(r => ({ id: r.id, title: r.title, body: r.body, timestamp: new Date(r.created_at).getTime() }));
+}

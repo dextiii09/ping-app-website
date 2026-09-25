@@ -70,7 +70,7 @@ export async function getUserProfile(uid) {
 }
 
 // role must be 'INFLUENCER' or 'BUSINESS' - the DB trigger/policies reject ADMIN.
-export async function signUp({ email, password, name, role, company, location, tags }) {
+export async function signUp({ email, password, name, role, company, location, tags, talentType }) {
   const cleanTags = (tags || []).map(t => t.trim()).filter(Boolean);
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -81,6 +81,7 @@ export async function signUp({ email, password, name, role, company, location, t
         name, role, company: company || '', location: location || 'India',
         tags: cleanTags.length ? cleanTags : ['New Member'],
         avatar: '', // no photo yet: shown as initials (see domUtils.initialsAvatar)
+        ...(role === 'INFLUENCER' ? { talent_type: talentType || 'INFLUENCER' } : {}),
         bio: `${name} just joined Ping${cleanTags.length ? ` — specialized in ${cleanTags.join(', ')}` : ''}.`
       }
     }
@@ -110,6 +111,27 @@ export async function updateUserProfile(uid, fields) {
   if (!data || data.length === 0) throw new Error('Profile not saved: your session may have expired. Please log in again.');
 }
 
+// Profile photo: stored in the public `avatars` bucket, inside the member's
+// own folder (see supabase/extras.sql). Returns the public URL.
+export async function uploadAvatar(uid, blob) {
+  const path = `${uid}/${Date.now()}.jpg`;
+  const { error } = await supabase.storage.from('avatars')
+    .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}
+
+// Best-effort clean-up of a replaced photo (only ever inside the member's own
+// folder of the avatars bucket).
+export async function removeAvatarFile(uid, url) {
+  const marker = '/storage/v1/object/public/avatars/';
+  const i = String(url || '').indexOf(marker);
+  if (i === -1) return;
+  const path = decodeURIComponent(url.slice(i + marker.length));
+  if (!path.startsWith(`${uid}/`)) return;
+  await supabase.storage.from('avatars').remove([path]);
+}
+
 export async function logIn(email, password) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw wrapAuthError(error);
@@ -126,7 +148,7 @@ export const signInWithGoogle = () => oauth('google');
 export const signInWithFacebook = () => oauth('facebook');
 
 // Completes a first-time Google/Facebook sign-in once role/location/niche are picked.
-export async function createSocialProfile({ uid, name, avatar, role, company, location, tags }) {
+export async function createSocialProfile({ uid, name, avatar, role, company, location, tags, talentType }) {
   const cleanTags = (tags || []).map(t => t.trim()).filter(Boolean);
   const { data, error } = await supabase.from('profiles').insert({
     id: uid,
@@ -138,6 +160,7 @@ export async function createSocialProfile({ uid, name, avatar, role, company, lo
     company: company || '',
     tags: cleanTags.length ? cleanTags : ['New Member'],
     job_title: role === 'INFLUENCER' ? 'Creator & Talent' : 'Brand Executive',
+    talent_type: role === 'INFLUENCER' ? (talentType || 'INFLUENCER') : null,
     stats: { followers: 'New', engagement: 'N/A', budget: 'Custom' },
     social_stats: { instagramFollowers: '0', youtubeSubscribers: '0', tiktokFollowers: '0', avgEngagement: '0%' }
   }).select().single();

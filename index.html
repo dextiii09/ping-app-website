@@ -8,7 +8,7 @@
 
     <!-- Primary Meta Tags -->
     <meta name="title" content="Ping | Hyperlocal Creator-Business Marketplace">
-    <meta name="description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot. Location-aware discovery, in-chat deals, and Smart Proposals.">
+    <meta name="description" content="Local businesses post campaigns with a fixed fee; local creators, comedians, DJs and bands apply; brands swipe to pick and chat straight away. Free during the pilot.">
     <meta name="keywords" content="hyperlocal influencer marketing, local creators, local business marketing, micro influencers, nano influencers, live briefs, smart proposals, ping">
     <meta name="author" content="ReachUp Media">
     <meta name="robots" content="index, follow">
@@ -18,7 +18,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://pingapp.site/">
     <meta property="og:title" content="Ping · Local brands. Local creators. One ping apart.">
-    <meta property="og:description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot.">
+    <meta property="og:description" content="Local businesses post a campaign, local creators, comedians, DJs and bands apply, and brands swipe to pick. Free during the pilot.">
     <meta property="og:image" content="https://pingapp.site/assets/images/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -27,7 +27,7 @@
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:title" content="Ping · Local brands. Local creators. One ping apart.">
-    <meta property="twitter:description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot.">
+    <meta property="twitter:description" content="Local businesses post a campaign, local creators, comedians, DJs and bands apply, and brands swipe to pick. Free during the pilot.">
     <meta property="twitter:image" content="https://pingapp.site/assets/images/og-image.png">
     
     <!-- Favicon -->
@@ -56,7 +56,7 @@
     <!-- Ambient Dynamic Glow Backdrop -->
     <div class="platform-glow"></div>
 
-    <!-- Sign Up / Log In Gate (shown until Firebase Auth confirms a session) -->
+    <!-- Sign Up / Log In Gate (shown until Supabase Auth confirms a session) -->
     <div id="authGateRoot"></div>
 
     <!-- Executive Navigation Header -->
@@ -189,7 +189,7 @@
             }, `id=eq.${uid}`);
         }
 
-        // The Firestore profile write (in authService.signUp) can lose the race
+        // The profile write (in authService.signUp) can lose the race
         // against the auth-state event that fires right after account creation,
         // so retry briefly instead of failing on the first miss.
         async function fetchProfileWithRetry(uid, attempts = 6) {
@@ -252,7 +252,7 @@
                     // The session was already running and just went away -
                     // NOT the normal startup case (that's handled below).
                     // This fires if the user is signed out in another tab
-                    // (Firebase broadcasts auth state across tabs for the
+                    // (Supabase broadcasts auth state across tabs for the
                     // same browser), or their token is revoked/expired
                     // server-side. Without this, a previously-authenticated
                     // tab would keep showing the full app - private data,

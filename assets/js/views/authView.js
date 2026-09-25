@@ -13,6 +13,7 @@ import {
 } from '../authService.js';
 import { detectLocation } from '../geoService.js';
 import { NICHE_TAGS } from '../mockData.js';
+import { TALENT_TYPES } from '../talentTypes.js';
 import { escapeHtml } from '../domUtils.js';
 import { PingMap } from '../landing/pingMap.js';
 
@@ -40,14 +41,14 @@ const NICHE_ICONS = {
 
 const ASIDE = {
   INFLUENCER: {
-    kicker: 'For creators',
-    title: 'Get paid to create for the places <em>you already love.</em>',
-    points: ['A media kit brands can browse', 'Pitch live briefs from local brands', 'Keep 100% during the pilot']
+    kicker: 'For creators & artists',
+    title: 'Get booked by the places <em>you already love.</em>',
+    points: ['Influencers, comedians, DJs, bands and artists', 'Apply to local campaigns in one tap', 'Fixed fees, shown upfront']
   },
   BUSINESS: {
     kicker: 'For brands',
-    title: 'Find the creators your customers <em>already follow.</em>',
-    points: ['Discover creators by neighbourhood and niche', 'Post a brief and let creators pitch', 'Agree deals in writing with Smart Proposals']
+    title: 'Find the talent your customers <em>already follow.</em>',
+    points: ['Post a campaign with a fixed fee and slots', 'Swipe through the talent who apply', 'Every pick opens a chat straight away']
   },
   login: {
     kicker: 'Welcome back',
@@ -125,7 +126,8 @@ export function renderAuthGate(container, opts = {}) {
     busy: false,
     notice: null,   // { type: 'error' | 'success' | 'info', text, action?: { id, label } }
     errors: {},
-    resendAt: 0
+    resendAt: 0,
+    talentType: 'INFLUENCER'
   };
   let password = ''; // kept in memory only, never rendered into HTML
   let resendTimer = 0;
@@ -246,8 +248,19 @@ export function renderAuthGate(container, opts = {}) {
       </div>`;
   }
 
+  function talentField() {
+    return `
+      <div class="auth-field">
+        <span class="auth-label" id="authTalentLabel">What do you do?</span>
+        <div class="auth-talents" role="radiogroup" aria-labelledby="authTalentLabel">
+          ${TALENT_TYPES.map((t) => `<button type="button" role="radio" class="auth-talent ${s.talentType === t.id ? 'is-on' : ''}" aria-checked="${s.talentType === t.id}" data-talent="${t.id}"><i class="ph-fill ${t.icon}"></i><span>${escapeHtml(t.label)}</span></button>`).join('')}
+        </div>
+      </div>`;
+  }
+
   function aboutFields() {
     return `
+      ${isBrand() ? '' : talentField()}
       ${field({ id: 'authName', label: isBrand() ? 'Your name' : 'Full name', value: s.values.name, placeholder: isBrand() ? 'e.g. Priya Sharma' : 'e.g. Simran Kaur', autocomplete: 'name' })}
       ${isBrand() ? field({ id: 'authCompany', label: 'Business name', value: s.values.company, placeholder: 'e.g. Brew Lab Café', autocomplete: 'organization' }) : ''}
       ${field({
@@ -663,7 +676,8 @@ export function renderAuthGate(container, opts = {}) {
         try {
           await signUp({
             email: s.values.email, password, name: s.values.name, role: s.role,
-            company: isBrand() ? s.values.company : '', location: s.values.location, tags: s.tags
+            company: isBrand() ? s.values.company : '', location: s.values.location, tags: s.tags,
+            talentType: isBrand() ? null : s.talentType
           });
           // Only reached if email confirmation is off: the auth listener takes over.
         } catch (err) {
@@ -697,7 +711,8 @@ export function renderAuthGate(container, opts = {}) {
         try {
           created = await createSocialProfile({
             uid: user.uid, name: s.values.name, avatar: user.photoURL, role: s.role,
-            company: isBrand() ? s.values.company : '', location: s.values.location, tags: s.tags
+            company: isBrand() ? s.values.company : '', location: s.values.location, tags: s.tags,
+            talentType: isBrand() ? null : s.talentType
           });
         } catch (err) {
           console.error('createSocialProfile failed:', err);
@@ -831,6 +846,16 @@ export function renderAuthGate(container, opts = {}) {
     }
     const role = e.target.closest('[data-role]');
     if (role) { setRole(role.getAttribute('data-role')); return; }
+    const talent = e.target.closest('[data-talent]');
+    if (talent) {
+      s.talentType = talent.getAttribute('data-talent');
+      card.querySelectorAll('[data-talent]').forEach((b) => {
+        const on = b === talent;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-checked', String(on));
+      });
+      return;
+    }
     const niche = e.target.closest('[data-tag]');
     if (niche) { toggleTag(niche.getAttribute('data-tag')); return; }
     const social = e.target.closest('[data-social]');

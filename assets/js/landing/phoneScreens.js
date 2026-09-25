@@ -1,7 +1,8 @@
 // Phone mock-ups for the landing page's "How it works" section. Each screen
-// mirrors a real step in the Ping app (spotlight deck, Ping, Deal Room chat,
-// Smart Proposal) and has a GSAP timeline that plays when its step becomes
-// active. Names and numbers are illustrative.
+// mirrors a real step of the campaign flow in the Ping app (a brand posts a
+// campaign, talent applies, the brand swipes through applicants, a chat
+// opens) and has a GSAP timeline that plays when its step becomes active.
+// Names and numbers are illustrative.
 
 const img = (id, w = 500) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=70`;
 
@@ -9,6 +10,7 @@ export const PHOTOS = {
   simran: img('1534528741775-53994a69daeb'),
   zoya: img('1517841905240-472988babdf9'),
   kabir: img('1507003211169-0a1dd7228f2d'),
+  dj: img('1695277715416-e225cf09d70c'),
   brewLab: img('1509042239860-f550ce710b93', 200),
   cafe: img('1554118811-1e0d58224f24', 1400),
   creator: img('1517841905240-472988babdf9', 1400),
@@ -19,132 +21,118 @@ export const PHOTOS = {
   arjun: img('1500648767791-00dcc994a43e', 200)
 };
 
+// An applicant card in the brand's review deck.
 function card(pos, photo, info, { stamp = false } = {}) {
   return `
     <div class="ps-card ps-card-${pos}">
       <div class="ps-card-img" style="background-image:url('${photo}')"></div>
-      ${stamp ? '<span class="ps-stamp">PING</span>' : ''}
+      ${stamp ? '<span class="ps-stamp">SELECT</span>' : ''}
       <div class="ps-card-info">
-        <span class="ps-card-place"><i class="ph-fill ph-map-pin"></i> ${info.place}</span>
+        <span class="ps-card-place"><i class="ph-fill ${info.icon}"></i> ${info.type} · ${info.place}</span>
         <b>${info.name} <i class="ph-fill ph-seal-check"></i></b>
-        <span class="ps-card-role">${info.role}</span>
-        <span class="ps-card-tags">${info.tags.map((t) => `<em>#${t}</em>`).join('')}</span>
+        <span class="ps-card-role">${info.stats}</span>
+        <span class="ps-card-quote">“${info.pitch}”</span>
       </div>
     </div>`;
 }
 
-const SIMRAN = { name: 'Simran K.', role: 'Food & café creator', place: 'Sector 17', tags: ['coffee', 'brunch'] };
-const ZOYA = { name: 'Zoya M.', role: 'Lifestyle creator', place: 'Sector 22', tags: ['cafés', 'weekends'] };
-const KABIR = { name: 'Kabir S.', role: 'Food & travel creator', place: 'Mohali', tags: ['streetfood'] };
-
-function bar() {
-  return `
-    <div class="ps-bar">
-      <span class="ps-bar-title">Explore</span>
-      <span class="ps-bar-bell"><i class="ph-fill ph-bell"></i><b></b></span>
-    </div>
-    <div class="ps-chips">
-      <span class="ps-chip is-on">Food &amp; Café</span>
-      <span class="ps-chip">Lifestyle</span>
-      <span class="ps-chip"><i class="ph-fill ph-seal-check"></i> Verified</span>
-    </div>`;
-}
-
-function actions(ripple = false) {
-  return `
-    <div class="ps-actions">
-      <span class="ps-act ps-act-pass"><i class="ph-bold ph-x"></i></span>
-      <span class="ps-act ps-act-super"><i class="ph-fill ph-lightning"></i></span>
-      <span class="ps-act ps-act-ping">
-        ${ripple ? '<span class="ps-ripple"></span><span class="ps-ripple"></span>' : ''}
-        <i class="ph-fill ph-heart"></i>
-      </span>
-    </div>`;
-}
+const SIMRAN = { name: 'Simran K.', type: 'Influencer', icon: 'ph-camera', place: 'Sector 17', stats: '28K Instagram · 6.8% engagement', pitch: 'Brunch is my favourite thing to shoot!' };
+const DJ = { name: 'DJ Kabir', type: 'DJ', icon: 'ph-vinyl-record', place: 'Sector 7', stats: 'Bollywood, House · 140+ gigs', pitch: 'Happy to do a chilled daytime set.' };
+const ZOYA = { name: 'Zoya M.', type: 'Influencer', icon: 'ph-camera', place: 'Sector 22', stats: '12K Instagram · 7.1% engagement', pitch: 'I post a café every weekend.' };
 
 const SCREENS = [
-  // 0 - Discover
+  // 0 - A brand posts a campaign
   () => `
-    <div class="ps ps-discover">
-      ${bar()}
-      <div class="ps-deck">
-        ${card('back2', PHOTOS.kabir, KABIR)}
-        ${card('back1', PHOTOS.zoya, ZOYA)}
-        ${card('top', PHOTOS.simran, SIMRAN)}
+    <div class="ps ps-post">
+      <div class="ps-bar">
+        <span class="ps-bar-title">New campaign</span>
+        <span class="ps-bar-bell"><i class="ph-fill ph-megaphone-simple"></i></span>
       </div>
-      ${actions()}
+      <div class="ps-form">
+        <div class="ps-field"><span>Title</span><b>Weekend brunch reels</b></div>
+        <div class="ps-field">
+          <span>Looking for</span>
+          <div class="ps-chips ps-chips-tight">
+            <span class="ps-chip is-on"><i class="ph-fill ph-camera"></i> Influencer</span>
+            <span class="ps-chip"><i class="ph-fill ph-vinyl-record"></i> DJ</span>
+            <span class="ps-chip"><i class="ph-fill ph-microphone-stage"></i> Comedian</span>
+          </div>
+        </div>
+        <div class="ps-row2">
+          <div class="ps-field"><span>Fixed fee</span><b class="ps-lime">₹5,000</b></div>
+          <div class="ps-field"><span>Slots</span><div class="ps-stepper"><i>−</i><b class="ps-slots-num">3</b><i>+</i></div></div>
+        </div>
+        <div class="ps-field"><span>Deliverables · date</span><b>1 Reel + 2 Stories · Sat 12 Oct</b></div>
+      </div>
+      <div class="ps-publish"><span>Publish campaign</span><span class="ps-tap"></span></div>
+      <div class="ps-toast"><i class="ph-fill ph-check-circle"></i> Live · local talent can apply</div>
     </div>`,
 
-  // 1 - Ping
+  // 1 - Talent applies (creator's side)
   () => `
-    <div class="ps ps-ping">
-      ${bar()}
-      <div class="ps-toast"><i class="ph-fill ph-lightning"></i> Ping sent to Simran</div>
+    <div class="ps ps-apply">
+      <div class="ps-bar">
+        <span class="ps-bar-title">Open briefs</span>
+        <span class="ps-bar-bell"><i class="ph-fill ph-bell"></i><b></b></span>
+      </div>
+      <div class="ps-brief">
+        <div class="ps-brief-brand">
+          <span class="ps-av-sm" style="background-image:url('${PHOTOS.brewLab}')"></span>
+          <div><b>Brew Lab</b><span>Sector 17 · Near you</span></div>
+        </div>
+        <h4>Weekend brunch reels</h4>
+        <div class="ps-prop-row"><span>Deliverables</span><b>1 Reel + 2 Stories</b></div>
+        <div class="ps-prop-row"><span>Date</span><b>Sat 12 Oct</b></div>
+        <div class="ps-prop-row"><span>Slots</span><b>3 open</b></div>
+        <div class="ps-prop-total"><span>Fixed fee</span><b>₹5,000</b></div>
+        <div class="ps-pitch"><span>Pitch note</span>Brunch is my favourite thing to shoot!</div>
+        <div class="ps-apply-btn">
+          <span class="ps-apply-a">Apply</span>
+          <span class="ps-apply-b"><i class="ph-bold ph-check"></i> Applied</span>
+          <span class="ps-tap"></span>
+        </div>
+      </div>
+      <p class="ps-apply-note">No haggling: the fee is set upfront.</p>
+    </div>`,
+
+  // 2 - The brand swipes through applicants
+  () => `
+    <div class="ps ps-pick">
+      <div class="ps-bar">
+        <span class="ps-bar-title">Applicants</span>
+        <span class="ps-slots" aria-label="Slots filled"><i class="is-on"></i><i></i><i></i></span>
+      </div>
       <div class="ps-deck">
-        ${card('back2', PHOTOS.kabir, KABIR)}
-        ${card('back1', PHOTOS.zoya, ZOYA)}
+        ${card('back2', PHOTOS.zoya, ZOYA)}
+        ${card('back1', PHOTOS.dj, DJ)}
         ${card('top', PHOTOS.simran, SIMRAN, { stamp: true })}
       </div>
-      ${actions(true)}
+      <div class="ps-actions">
+        <span class="ps-act ps-act-pass"><i class="ph-bold ph-x"></i></span>
+        <span class="ps-act ps-act-ping">
+          <span class="ps-ripple"></span><span class="ps-ripple"></span>
+          <i class="ph-bold ph-check"></i>
+        </span>
+      </div>
+      <div class="ps-toast"><i class="ph-fill ph-chats-circle"></i> Simran's in · chat open</div>
     </div>`,
 
-  // 2 - Match & chat
+  // 3 - The chat opens straight away (creator's side)
   () => `
-    <div class="ps ps-match">
-      <div class="ps-match-layer">
-        <div class="ps-match-avatars">
-          <span class="ps-av ps-av-l" style="background-image:url('${PHOTOS.brewLab}')"></span>
-          <span class="ps-burst"></span>
-          <span class="ps-av ps-av-r" style="background-image:url('${PHOTOS.simran}')"></span>
-        </div>
-        <p class="ps-match-title">It's a <em>match!</em></p>
-        <p class="ps-match-sub">You and Simran pinged each other</p>
-      </div>
-      <div class="ps-chat-layer">
-        <div class="ps-chat-head">
-          <span class="ps-av-sm" style="background-image:url('${PHOTOS.simran}')"></span>
-          <div><b>Simran K.</b><span>Deal Room</span></div>
-          <i class="ph-bold ph-dots-three"></i>
-        </div>
-        <div class="ps-chat-body">
-          <div class="ps-msg ps-msg-out">Hi Simran! Loved your latte reels ☕</div>
-          <div class="ps-msg ps-msg-out">Would you shoot our cold brew launch?</div>
-          <div class="ps-typing"><i></i><i></i><i></i></div>
-          <div class="ps-msg ps-msg-in">I'd love to! Free this weekend 🙌</div>
-          <div class="ps-ai"><i class="ph-fill ph-sparkle"></i><span>Ping AI suggests <b>Send a Smart Proposal</b></span></div>
-        </div>
-        <div class="ps-input"><span>Message…</span><i class="ph-fill ph-paper-plane-tilt"></i></div>
-      </div>
-    </div>`,
-
-  // 3 - Smart Proposal (creator's side)
-  () => `
-    <div class="ps ps-proposal">
+    <div class="ps ps-chat">
       <div class="ps-chat-head">
         <span class="ps-av-sm" style="background-image:url('${PHOTOS.brewLab}')"></span>
         <div><b>Brew Lab</b><span>Deal Room</span></div>
         <i class="ph-bold ph-dots-three"></i>
       </div>
-      <div class="ps-prop-wrap">
-        <div class="ps-prop">
-          <span class="ps-prop-tag"><i class="ph-fill ph-file-text"></i> Smart Proposal</span>
-          <h4>Cold brew launch</h4>
-          <div class="ps-prop-row"><span>Deliverables</span><b>1 Reel + 3 Stories</b></div>
-          <div class="ps-prop-row"><span>Shoot</span><b>This Saturday</b></div>
-          <div class="ps-prop-row"><span>Goes live</span><b>Monday</b></div>
-          <div class="ps-prop-total"><span>Budget</span><b>₹6,500</b></div>
-          <div class="ps-prop-btns">
-            <span class="ps-prop-decline">Decline</span>
-            <span class="ps-prop-accept">
-              <span class="ps-accept-a">Accept</span>
-              <span class="ps-accept-b"><i class="ph-bold ph-check"></i> Accepted</span>
-              <span class="ps-confetti">${'<i></i>'.repeat(10)}</span>
-              <span class="ps-tap"></span>
-            </span>
-          </div>
-        </div>
-        <div class="ps-deal-note"><i class="ph-fill ph-check-circle"></i> Deal agreed, in writing</div>
+      <div class="ps-chat-body">
+        <div class="ps-note"><i class="ph-fill ph-megaphone-simple"></i> Selected for “Weekend brunch reels” · ₹5,000 fixed</div>
+        <div class="ps-msg ps-msg-in">Welcome aboard! Can you shoot Saturday at 11?</div>
+        <div class="ps-typing"><i></i><i></i><i></i></div>
+        <div class="ps-msg ps-msg-out">Perfect, see you there ☕</div>
+        <div class="ps-ai"><i class="ph-fill ph-sparkle"></i><span>Ping AI suggests <b>Confirm the shot list</b></span></div>
       </div>
+      <div class="ps-input"><span>Message…</span><i class="ph-fill ph-paper-plane-tilt"></i></div>
     </div>`
 ];
 
@@ -159,66 +147,70 @@ export function buildScreenTimeline(gsap, el, index) {
   const tl = gsap.timeline({ paused: true });
 
   if (index === 0) {
-    tl.from(qa('.ps-chip'), { y: 12, opacity: 0, stagger: 0.06, duration: 0.5, ease: 'power3.out' })
-      .from(qa('.ps-card'), { y: 70, opacity: 0, stagger: 0.1, duration: 0.9, ease: 'expo.out' }, 0.1)
-      .from(q('.ps-card-top .ps-card-info').children, { y: 14, opacity: 0, stagger: 0.06, duration: 0.6, ease: 'power3.out' }, 0.45)
-      .from(qa('.ps-act'), { scale: 0.5, opacity: 0, stagger: 0.07, duration: 0.55, ease: 'back.out(2.2)' }, 0.5)
-      .to(q('.ps-card-top'), { rotation: -4, x: -12, duration: 0.35, ease: 'power2.inOut', yoyo: true, repeat: 1 }, 1.4)
-      .to(q('.ps-card-top'), { rotation: 4, x: 12, duration: 0.35, ease: 'power2.inOut', yoyo: true, repeat: 1 }, 2.1);
+    const tap = q('.ps-tap');
+    const slots = q('.ps-slots-num');
+    const counter = { n: 1 };
+    tl.call(() => { slots.textContent = '1'; }, null, 0)
+      .from(qa('.ps-field'), { y: 18, opacity: 0, stagger: 0.09, duration: 0.6, ease: 'expo.out' }, 0.1)
+      .from(qa('.ps-chip'), { scale: 0.6, opacity: 0, stagger: 0.06, duration: 0.45, ease: 'back.out(2.2)' }, 0.45)
+      .fromTo(counter, { n: 1 }, {
+        n: 3, duration: 0.8, ease: 'steps(2)',
+        onUpdate: () => { slots.textContent = String(Math.round(counter.n)); }
+      }, 0.9)
+      .from(q('.ps-publish'), { y: 20, opacity: 0, duration: 0.6, ease: 'expo.out' }, 0.8)
+      .fromTo(tap, { opacity: 0, scale: 1.6, x: 60, y: 90 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.7, ease: 'power3.out' }, 1.6)
+      .to(tap, { scale: 0.7, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.35)
+      .to(q('.ps-publish'), { scale: 0.95, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.35)
+      .to(tap, { opacity: 0, duration: 0.3 }, 2.6)
+      .fromTo(q('.ps-toast'), { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'expo.out' }, 2.55)
+      .to(q('.ps-toast'), { y: -60, opacity: 0, duration: 0.5, ease: 'power2.in' }, 4.6);
   }
 
   if (index === 1) {
-    const top = q('.ps-card-top');
-    const next = q('.ps-card-back1');
-    const last = q('.ps-card-back2');
-    tl.fromTo(q('.ps-act-ping'), { scale: 1 }, { scale: 1.22, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, 0.35)
-      .fromTo(qa('.ps-ripple'), { scale: 0.6, opacity: 0.9 }, { scale: 2.4, opacity: 0, duration: 1.1, stagger: 0.18, ease: 'power2.out' }, 0.35)
-      .fromTo(q('.ps-stamp'), { scale: 1.9, opacity: 0, rotation: -24 }, { scale: 1, opacity: 1, rotation: -12, duration: 0.4, ease: 'back.out(2.4)' }, 0.5)
-      .to(top, { x: 300, y: -20, rotation: 20, opacity: 0, duration: 0.75, ease: 'power3.in' }, 1.1)
-      .to(next, { y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'expo.out' }, 1.6)
-      .to(next.querySelector('.ps-card-info'), { opacity: 1, duration: 0.4 }, 1.8)
-      .to(last, { y: -9, scale: 0.95, opacity: 0.8, duration: 0.7, ease: 'expo.out' }, 1.65)
-      .fromTo(q('.ps-toast'), { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'expo.out' }, 1.5)
-      .to(q('.ps-toast'), { y: -60, opacity: 0, duration: 0.5, ease: 'power2.in' }, 3.6);
+    const btn = q('.ps-apply-btn');
+    const tap = q('.ps-tap');
+    tl.from(q('.ps-brief'), { y: 60, opacity: 0, duration: 0.9, ease: 'expo.out' }, 0.1)
+      .from(qa('.ps-brief > *:not(.ps-pitch)'), { y: 12, opacity: 0, stagger: 0.07, duration: 0.5, ease: 'power3.out' }, 0.35)
+      .set(btn, { className: 'ps-apply-btn' }, 0)
+      .fromTo(q('.ps-pitch'), { height: 0, opacity: 0, marginTop: 0, paddingTop: 0, paddingBottom: 0 }, { height: 'auto', opacity: 1, marginTop: 4, paddingTop: 9, paddingBottom: 9, duration: 0.6, ease: 'expo.out' }, 1.3)
+      .fromTo(tap, { opacity: 0, scale: 1.6, x: 60, y: 90 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.7, ease: 'power3.out' }, 1.8)
+      .to(tap, { scale: 0.7, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.55)
+      .to(btn, { scale: 0.95, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.55)
+      .set(btn, { className: 'ps-apply-btn is-done' }, 2.67)
+      .to(tap, { opacity: 0, duration: 0.3 }, 2.8)
+      .from(q('.ps-apply-note'), { y: 10, opacity: 0, duration: 0.6, ease: 'expo.out' }, 2.9);
   }
 
   if (index === 2) {
-    tl.set(q('.ps-match-layer'), { yPercent: 0, opacity: 1 })
-      .fromTo(q('.ps-av-l'), { x: -140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'expo.out' }, 0.1)
-      .fromTo(q('.ps-av-r'), { x: 140, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'expo.out' }, 0.1)
-      .fromTo(q('.ps-burst'), { scale: 0.3, opacity: 1 }, { scale: 2.6, opacity: 0, duration: 1, ease: 'power2.out' }, 0.55)
-      .from(q('.ps-match-title'), { y: 24, opacity: 0, duration: 0.7, ease: 'expo.out' }, 0.6)
-      .from(q('.ps-match-sub'), { y: 16, opacity: 0, duration: 0.7, ease: 'expo.out' }, 0.72)
-      .to(q('.ps-match-layer'), { yPercent: -100, opacity: 0, duration: 0.8, ease: 'expo.inOut' }, 2.1)
-      .fromTo(q('.ps-chat-layer'), { yPercent: 12, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, ease: 'expo.out' }, 2.3);
-
-    const msgs = qa('.ps-msg');
-    const typing = q('.ps-typing');
-    tl.from(msgs[0], { y: 14, scale: 0.9, opacity: 0, transformOrigin: '100% 100%', duration: 0.45, ease: 'back.out(1.8)' }, 2.8)
-      .from(msgs[1], { y: 14, scale: 0.9, opacity: 0, transformOrigin: '100% 100%', duration: 0.45, ease: 'back.out(1.8)' }, 3.25)
-      .fromTo(typing, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, 3.7)
-      .to(typing, { opacity: 0, height: 0, marginTop: -8, duration: 0.25 }, 4.6)
-      .from(msgs[2], { y: 14, scale: 0.9, opacity: 0, transformOrigin: '0% 100%', duration: 0.45, ease: 'back.out(1.8)' }, 4.65)
-      .from(q('.ps-ai'), { y: 14, opacity: 0, duration: 0.6, ease: 'expo.out' }, 5.2);
+    const top = q('.ps-card-top');
+    const next = q('.ps-card-back1');
+    const last = q('.ps-card-back2');
+    const dots = qa('.ps-slots i');
+    tl.set(dots[1], { className: '' }, 0)
+      .from(top.querySelector('.ps-card-info').children, { y: 12, opacity: 0, stagger: 0.06, duration: 0.5, ease: 'power3.out' }, 0.15)
+      .fromTo(q('.ps-act-ping'), { scale: 1 }, { scale: 1.22, duration: 0.18, yoyo: true, repeat: 1, ease: 'power2.out' }, 1.1)
+      .fromTo(qa('.ps-ripple'), { scale: 0.6, opacity: 0.9 }, { scale: 2.4, opacity: 0, duration: 1.1, stagger: 0.18, ease: 'power2.out' }, 1.1)
+      .fromTo(q('.ps-stamp'), { scale: 1.9, opacity: 0, rotation: -24 }, { scale: 1, opacity: 1, rotation: -12, duration: 0.4, ease: 'back.out(2.4)' }, 1.25)
+      .to(top, { x: 300, y: -20, rotation: 20, opacity: 0, duration: 0.75, ease: 'power3.in' }, 1.85)
+      .set(dots[1], { className: 'is-on' }, 2.3)
+      .fromTo(dots[1], { scale: 0.4 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' }, 2.3)
+      .to(next, { y: 0, scale: 1, opacity: 1, duration: 0.7, ease: 'expo.out' }, 2.35)
+      .to(next.querySelector('.ps-card-info'), { opacity: 1, duration: 0.4 }, 2.55)
+      .to(last, { y: -9, scale: 0.95, opacity: 0.8, duration: 0.7, ease: 'expo.out' }, 2.4)
+      .fromTo(q('.ps-toast'), { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'expo.out' }, 2.3)
+      .to(q('.ps-toast'), { y: -60, opacity: 0, duration: 0.5, ease: 'power2.in' }, 4.4);
   }
 
   if (index === 3) {
-    const accept = q('.ps-prop-accept');
-    const tap = q('.ps-tap');
-    tl.from(q('.ps-prop'), { y: 60, opacity: 0, duration: 0.9, ease: 'expo.out' }, 0.1)
-      .from(qa('.ps-prop > *'), { y: 12, opacity: 0, stagger: 0.07, duration: 0.5, ease: 'power3.out' }, 0.35)
-      .set(accept, { className: 'ps-prop-accept' }, 0)
-      .fromTo(tap, { opacity: 0, scale: 1.6, x: 60, y: 120 }, { opacity: 1, scale: 1, x: 0, y: 0, duration: 0.8, ease: 'power3.out' }, 1.3)
-      .to(tap, { scale: 0.7, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.15)
-      .to(accept, { scale: 0.94, duration: 0.12, yoyo: true, repeat: 1, ease: 'power2.inOut' }, 2.15)
-      .set(accept, { className: 'ps-prop-accept is-accepted' }, 2.27)
-      .fromTo(qa('.ps-confetti i'), { x: 0, y: 0, opacity: 1, scale: 1 }, {
-        x: (i) => Math.cos((i / 10) * Math.PI * 2) * (46 + (i % 3) * 14),
-        y: (i) => Math.sin((i / 10) * Math.PI * 2) * (30 + (i % 3) * 10) - 10,
-        opacity: 0, scale: 0.4, duration: 0.9, ease: 'power3.out'
-      }, 2.28)
-      .to(tap, { opacity: 0, duration: 0.3 }, 2.5)
-      .from(q('.ps-deal-note'), { y: 14, opacity: 0, duration: 0.6, ease: 'expo.out' }, 2.6);
+    const msgs = qa('.ps-msg');
+    const typing = q('.ps-typing');
+    tl.from(q('.ps-chat-head'), { y: -16, opacity: 0, duration: 0.6, ease: 'expo.out' }, 0.1)
+      .from(q('.ps-note'), { scale: 0.85, opacity: 0, duration: 0.6, ease: 'back.out(1.8)' }, 0.4)
+      .from(msgs[0], { y: 14, scale: 0.9, opacity: 0, transformOrigin: '0% 100%', duration: 0.45, ease: 'back.out(1.8)' }, 1.1)
+      .fromTo(typing, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.3 }, 1.6)
+      .to(typing, { opacity: 0, height: 0, marginTop: -8, duration: 0.25 }, 2.5)
+      .from(msgs[1], { y: 14, scale: 0.9, opacity: 0, transformOrigin: '100% 100%', duration: 0.45, ease: 'back.out(1.8)' }, 2.55)
+      .from(q('.ps-ai'), { y: 14, opacity: 0, duration: 0.6, ease: 'expo.out' }, 3.1);
   }
 
   return tl;
