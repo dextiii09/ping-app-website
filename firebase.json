@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "package.json",
+      "serve.js",
+      "README.md",
+      "AUDIT_REPORT.md",
+      "**/.*",
+      "**/node_modules/**",
+      "supabase/**"
+    ]
+  }
+}

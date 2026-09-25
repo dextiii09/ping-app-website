@@ -3,188 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ping | The Premium Network for Creators & Brands</title>
-    
+    <title>Ping · Local brands. Local creators. One ping apart.</title>
+    <meta name="theme-color" content="#0a0a0a">
+
     <!-- Primary Meta Tags -->
-    <meta name="title" content="Ping | The Premium Network for Creators & Brands">
-    <meta name="description" content="Elevate your network. Ping connects top-tier creators and brands with AI-powered discovery and seamless proposals. Stop swiping mindlessly and start collaborating.">
-    <meta name="keywords" content="professional networking, brand collaborations, creator networking, influencer marketing app, connect brands and creators, ping app">
+    <meta name="title" content="Ping | Hyperlocal Creator-Business Marketplace">
+    <meta name="description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot. Location-aware discovery, in-chat deals, and Smart Proposals.">
+    <meta name="keywords" content="hyperlocal influencer marketing, local creators, local business marketing, micro influencers, nano influencers, live briefs, smart proposals, ping">
     <meta name="author" content="ReachUp Media">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://ping.reachupmedia.in">
+    <link rel="canonical" href="https://pingapp.site/">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ping.reachupmedia.in/">
-    <meta property="og:title" content="Ping | The Premium Network for Creators & Brands">
-    <meta property="og:description" content="Elevate your network. Ping connects top-tier creators and brands with AI-powered discovery and seamless proposals.">
-    <meta property="og:image" content="https://ping.reachupmedia.in/assets/images/mockup-home.png">
+    <meta property="og:url" content="https://pingapp.site/">
+    <meta property="og:title" content="Ping · Local brands. Local creators. One ping apart.">
+    <meta property="og:description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot.">
+    <meta property="og:image" content="https://pingapp.site/assets/images/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Ping: Local brands. Local creators. One ping apart.">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://ping.reachupmedia.in/">
-    <meta property="twitter:title" content="Ping | The Premium Network for Creators & Brands">
-    <meta property="twitter:description" content="Elevate your network. Ping connects top-tier creators and brands with AI-powered discovery and seamless proposals.">
-    <meta property="twitter:image" content="https://ping.reachupmedia.in/assets/images/mockup-home.png">
+    <meta property="twitter:title" content="Ping · Local brands. Local creators. One ping apart.">
+    <meta property="twitter:description" content="Connecting local businesses with local micro & nano creators, wherever you are — direct, transparent, and free during our pilot.">
+    <meta property="twitter:image" content="https://pingapp.site/assets/images/og-image.png">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <!-- Fonts -->
+    <link rel="icon" type="image/svg+xml" href="/assets/images/ping-mark.svg">
+
+    <!-- Typography: Inter for the app; Geist, Geist Mono and Instrument Serif for the public pages -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     
-    <!-- Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Phosphor Icons Web -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="./assets/css/style.css">
+    <!-- Luxury Design System Styling -->
+    <link rel="stylesheet" href="./assets/css/platform.css">
+    <link rel="stylesheet" href="./assets/css/landing.css">
+    <link rel="stylesheet" href="./assets/css/app-theme.css">
 </head>
 <body>
-    
-    <!-- Custom Cursor -->
-    <div class="custom-cursor"></div>
 
-    <nav class="nav">
-        <div class="nav-brand">
-            <i class="ph-fill ph-lightning"></i> Ping
-        </div>
-        <div class="nav-cta">
-            <button class="btn-primary magnetic trigger-modal">Join Waitlist</button>
-        </div>
-    </nav>
+    <!-- Ambient Dynamic Glow Backdrop -->
+    <div class="platform-glow"></div>
 
-    <main class="main-content">
-        <!-- Hero -->
-        <header class="hero scroll-reveal">
-            <div class="badge">ELEVATE YOUR NETWORK</div>
-            <h1 class="hero-title">
-                WHERE TOP CREATORS <br>
-                <span class="text-gold">MEET PREMIER BRANDS.</span>
-            </h1>
-            <p class="hero-subtitle">
-                Stop swiping blindly. Ping uses AI-driven concierge discovery to connect you with the highest-intent collaborations on the market.
-            </p>
-            <div class="hero-buttons">
-                <button class="btn-store magnetic trigger-modal">
-                    <i class="ph-fill ph-apple-logo"></i> iOS Waitlist
-                </button>
-                <button class="btn-store magnetic trigger-modal">
-                    <i class="ph-fill ph-google-play-logo"></i> Android Waitlist
-                </button>
-            </div>
-        </header>
+    <!-- Sign Up / Log In Gate (shown until Firebase Auth confirms a session) -->
+    <div id="authGateRoot"></div>
 
-        <!-- Features Zig-Zag Section -->
-        <section class="features-section">
-            
-            <!-- Feature 1: AI Icebreakers (Text Left, Visual Right) -->
-            <div class="feature-row scroll-reveal">
-                <div class="feature-text">
-                    <div class="feature-icon"><i class="ph-fill ph-sparkle"></i></div>
-                    <h2>AI Icebreakers</h2>
-                    <p>Never stare at a blank screen again. Our AI analyzes your match and generates three highly-contextual conversation starters instantly.</p>
-                </div>
-                <div class="feature-visual">
-                    <div class="chat-mockup">
-                        <div class="chat-bubble left">Hey! Love your recent campaign.</div>
-                        <div class="chat-bubble right">Let's collaborate on the next one ✨</div>
-                        <div class="chat-bubble left">I'd love to! What's the timeline?</div>
-                    </div>
-                    <div class="glow-orb"></div>
-                </div>
-            </div>
+    <!-- Executive Navigation Header -->
+    <header class="platform-header" id="platformHeader"></header>
 
-            <!-- Feature 2: Concierge Discovery (Visual Left, Text Right) -->
-            <div class="feature-row reverse scroll-reveal">
-                <div class="feature-visual">
-                    <div class="card-mockup">
-                        <img src="./assets/images/mockup-home.png" alt="Profile Match">
-                        <div class="match-badge">95% Match</div>
-                    </div>
-                    <div class="glow-orb"></div>
-                </div>
-                <div class="feature-text">
-                    <div class="feature-icon"><i class="ph-fill ph-magnifying-glass-plus"></i></div>
-                    <h2>Concierge Discovery</h2>
-                    <p>Get a curated shortlist of high-intent candidates based on your specific campaign needs. Stop swiping mindlessly.</p>
-                </div>
-            </div>
+    <!-- Dynamic Platform Viewport -->
+    <main class="platform-viewport" id="platformViewport"></main>
 
-            <!-- Feature 3: Smart Proposals (Text Left, Visual Right) -->
-            <div class="feature-row scroll-reveal">
-                <div class="feature-text">
-                    <div class="feature-icon"><i class="ph-fill ph-handshake"></i></div>
-                    <h2>Smart Proposals</h2>
-                    <p>Lock in scope, price, and deliverables without ever leaving the chat interface. Generate legally binding contracts in seconds.</p>
-                </div>
-                <div class="feature-visual">
-                    <div class="proposal-mockup">
-                        <div class="proposal-header">Partnership Agreement</div>
-                        <div class="proposal-line"></div>
-                        <div class="proposal-line short"></div>
-                        <div class="proposal-price">$5,000</div>
-                        <button class="btn-primary" style="width:100%; margin-top:16px;">Sign & Accept</button>
-                    </div>
-                    <div class="glow-orb"></div>
-                </div>
-            </div>
-
-            <!-- Premium Banner -->
-            <div class="premium-banner scroll-reveal">
-                <div class="premium-text">
-                    <h2>Ping Premium <i class="ph-fill ph-crown" style="color:var(--gold);"></i></h2>
-                    <p>Unlock priority placement, unlimited AI insights, and see who liked you instantly.</p>
-                </div>
-                <button class="btn-secondary magnetic trigger-modal">Join Waitlist</button>
-            </div>
-
-        </section>
-
-        <!-- Minimal Footer -->
-        <footer class="footer scroll-reveal">
-            <h2 class="footer-title">READY TO CONQUER?</h2>
-            <div class="hero-buttons">
-                <button class="btn-store magnetic trigger-modal">
-                    <i class="ph-fill ph-apple-logo"></i> iOS
-                </button>
-                <button class="btn-store magnetic trigger-modal">
-                    <i class="ph-fill ph-google-play-logo"></i> Android
-                </button>
-            </div>
-            <div class="footer-links">
-                <span>© 2026 ReachUp Media</span>
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
-                <a href="mailto:contact@reachupmedia.in">Support</a>
-            </div>
-        </footer>
-    </main>
-
-    <!-- Waitlist Modal -->
-    <div class="modal-overlay" id="waitlistModal">
-        <div class="modal-content">
-            <button class="modal-close"><i class="ph ph-x"></i></button>
-            <div class="modal-header">
-                <i class="ph-fill ph-lock-key modal-icon"></i>
-                <h2>Exclusive Access</h2>
-                <p>Ping is currently invite-only. Join the waitlist to secure your priority placement.</p>
-            </div>
-            <form class="waitlist-form" id="waitlistForm">
-                <div class="input-group">
-                    <i class="ph ph-envelope-simple"></i>
-                    <input type="email" placeholder="Enter your best email" required>
-                </div>
-                <button type="submit" class="btn-primary modal-submit magnetic">Secure My Spot</button>
-            </form>
-            <div class="success-message" id="successMessage" style="display: none;">
-                <i class="ph-fill ph-check-circle"></i>
-                <h3>You're on the list.</h3>
-                <p>Keep an eye on your inbox for the VIP invite.</p>
-            </div>
-        </div>
+    <!-- Global Platform Toast Notification -->
+    <div class="platform-toast" id="platformToast">
+        <i class="ph-fill ph-check-circle" style="color:var(--gold); font-size:22px;"></i>
+        <span class="toast-content">Notification</span>
     </div>
 
-    <script src="./assets/js/main.js"></script>
+    <!-- Modals Container -->
+    <div id="platformGlobalModals"></div>
+
+    <!-- Master Platform Controller Bootstrapper -->
+    <script type="module">
+        import { store } from './assets/js/state.js';
+        import { platform } from './assets/js/platform.js';
+        import { onAuthChange, getUserProfile, isPasswordRecovery } from './assets/js/authService.js';
+        import { watchTable } from './assets/js/supabaseClient.js';
+        import { renderAuthGate } from './assets/js/views/authView.js';
+        import { renderSocialOnboarding } from './assets/js/views/socialOnboardingView.js';
+        import { renderLanding } from './assets/js/views/landingView.js';
+        import { coverScreen, revealScreen } from './assets/js/landing/motionUtils.js';
+
+        // The landing intro and scroll-driven animations assume a fresh start
+        // at the top; don't let the browser restore an old scroll position.
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+        let platformStarted = false;
+        let startedUid = null;
+
+        // Logged-out routing: the public landing page by default, the auth
+        // form at #login / #join-creator / #join-brand (hash-based so the
+        // browser Back button and shared links work).
+        let showingPublic = false;
+        let currentView = null;   // 'landing' or a PUBLIC_ROUTES key
+        let destroyPublic = null; // cleanup for whichever public view is mounted
+        let returnTo = null;      // landing section to scroll back to after "Back"
+        let transitioning = false;
+        const PUBLIC_ROUTES = {
+            login: { mode: 'login' },
+            'join-creator': { mode: 'signup', role: 'INFLUENCER' },
+            'join-brand': { mode: 'signup', role: 'BUSINESS' }
+        };
+
+        function renderPublicRoute() {
+            if (!showingPublic || platformStarted) return;
+            const key = window.location.hash.slice(1);
+            const route = PUBLIC_ROUTES[key];
+            const next = route ? key : 'landing';
+            if (next === currentView) return; // e.g. an in-page anchor - nothing to swap
+            const root = document.getElementById('authGateRoot');
+            if (destroyPublic) { destroyPublic(); destroyPublic = null; }
+            window.scrollTo(0, 0);
+            if (route) {
+                destroyPublic = renderAuthGate(root, { ...route, onBack: () => navigate('', null) });
+            } else {
+                const scrollTo = returnTo;
+                returnTo = null;
+                destroyPublic = renderLanding(root, {
+                    skipIntro: currentView !== null, // the intro only greets a fresh visit
+                    scrollTo,
+                    onChooseRole: (role, point) => navigate(role === 'BUSINESS' ? 'join-brand' : 'join-creator', point, 'choose'),
+                    onLogin: (point) => navigate('login', point)
+                });
+            }
+            currentView = next;
+            revealScreen();
+        }
+
+        // Ripple transition, then swap views. '' returns to the landing page
+        // without leaving a bare "#" in the address bar.
+        async function navigate(hash, point, from = null) {
+            if (transitioning) return;
+            transitioning = true;
+            if (hash) returnTo = from; // going back keeps the spot we left from
+            try { await coverScreen(point); } finally { transitioning = false; }
+            if (hash) {
+                window.location.hash = hash;
+            } else {
+                history.pushState(null, '', window.location.pathname + window.location.search);
+                renderPublicRoute();
+            }
+        }
+
+        function showPublic() {
+            showingPublic = true;
+            renderPublicRoute();
+        }
+
+        window.addEventListener('hashchange', renderPublicRoute);
+        window.addEventListener('popstate', renderPublicRoute);
+
+        function startPlatform() {
+            if (platformStarted) return;
+            platformStarted = true;
+            if (destroyPublic) { destroyPublic(); destroyPublic = null; }
+            currentView = null;
+            revealScreen();
+            if (PUBLIC_ROUTES[window.location.hash.slice(1)]) history.replaceState(null, '', window.location.pathname);
+            document.body.classList.remove('pre-auth');
+            document.getElementById('authGateRoot').innerHTML = '';
+            platform.init();
+            window.pingPlatform = platform;
+        }
+
+        // A suspended member (status BANNED, set from Operations) gets this
+        // screen instead of the app, and an open session is stopped the
+        // moment the admin suspends them.
+        function showSuspended() {
+            if (destroyPublic) { destroyPublic(); destroyPublic = null; }
+            currentView = 'suspended';
+            revealScreen();
+            destroyPublic = renderAuthGate(document.getElementById('authGateRoot'), { mode: 'suspended' });
+        }
+
+        function watchForSuspension(uid) {
+            watchTable('profiles', async () => {
+                try {
+                    const latest = await getUserProfile(uid);
+                    if (latest && latest.status === 'BANNED') {
+                        localStorage.removeItem('ping_platform_state_v1');
+                        window.location.reload();
+                    }
+                } catch (e) { /* offline: checked again on the next change */ }
+            }, `id=eq.${uid}`);
+        }
+
+        // The Firestore profile write (in authService.signUp) can lose the race
+        // against the auth-state event that fires right after account creation,
+        // so retry briefly instead of failing on the first miss.
+        async function fetchProfileWithRetry(uid, attempts = 6) {
+            for (let i = 0; i < attempts; i++) {
+                const profile = await getUserProfile(uid);
+                if (profile) return profile;
+                await new Promise(r => setTimeout(r, 350));
+            }
+            return null;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('pre-auth');
+
+            onAuthChange(async (user) => {
+                // Arrived from a password-reset link: ask for a new password
+                // before letting them into the app.
+                if (user && isPasswordRecovery() && !platformStarted) {
+                    if (destroyPublic) { destroyPublic(); destroyPublic = null; }
+                    currentView = 'reset';
+                    revealScreen();
+                    destroyPublic = renderAuthGate(document.getElementById('authGateRoot'), {
+                        mode: 'reset',
+                        onDone: () => { history.replaceState(null, '', window.location.pathname); window.location.reload(); }
+                    });
+                    return;
+                }
+                if (user) {
+                    if (platformStarted) {
+                        // A different account signed in elsewhere in this browser:
+                        // this tab is now showing someone else's session.
+                        if (user.uid !== startedUid) window.location.reload();
+                        return;
+                    }
+                    const profile = await fetchProfileWithRetry(user.uid);
+                    if (profile && profile.status === 'BANNED') {
+                        showSuspended();
+                    } else if (profile) {
+                        startedUid = user.uid;
+                        store.hydrateRealUser(profile);
+                        startPlatform();
+                        watchForSuspension(user.uid);
+                    } else {
+                        // No users/{uid} doc after retrying - for email
+                        // signup that would be a lost race (rare, and
+                        // retried above), but for a first-time Google/
+                        // Facebook sign-in this is the normal case, since
+                        // those providers never create the doc themselves.
+                        if (destroyPublic) { destroyPublic(); destroyPublic = null; }
+                        currentView = null;
+                        revealScreen();
+                        destroyPublic = renderSocialOnboarding(document.getElementById('authGateRoot'), user, (createdProfile) => {
+                            startedUid = user.uid;
+                            store.hydrateRealUser(createdProfile);
+                            startPlatform();
+                            watchForSuspension(user.uid);
+                        });
+                    }
+                } else if (platformStarted) {
+                    // The session was already running and just went away -
+                    // NOT the normal startup case (that's handled below).
+                    // This fires if the user is signed out in another tab
+                    // (Firebase broadcasts auth state across tabs for the
+                    // same browser), or their token is revoked/expired
+                    // server-side. Without this, a previously-authenticated
+                    // tab would keep showing the full app - private data,
+                    // working nav, everything - with no indication the
+                    // session underneath it was gone. Force the same clean
+                    // reload the manual Log Out button already does, rather
+                    // than trying to tear down a live app instance in place.
+                    localStorage.removeItem('ping_platform_state_v1');
+                    window.location.reload();
+                } else {
+                    showPublic();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

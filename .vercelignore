@@ -1,0 +1,15 @@
+# Only the website itself gets deployed. Everything below stays private.
+# ping web/ is the old prototype: it has a .env with an admin password and
+# SQLite databases, so it must never be uploaded.
+ping web
+.env
+.env.*
+*.db
+supabase
+AUDIT_REPORT.md
+SOCIAL_STATS_INTEGRATION_PLAN.md
+README.md
+package.json
+serve.js
+firebase.json
+.firebaserc

@@ -1,0 +1,20 @@
+{
+  "name": "ping-web-platform",
+  "version": "2.0.0",
+  "description": "Ping - hyperlocal creator-business marketplace (static site on Supabase + Vercel)",
+  "main": "serve.js",
+  "scripts": {
+    "start": "node serve.js",
+    "dev": "node serve.js",
+    "prod": "node serve.js --prod --port=3001"
+  },
+  "keywords": [
+    "hyperlocal",
+    "creators",
+    "local-business",
+    "influencer-marketing",
+    "ping"
+  ],
+  "author": "ReachUp Media",
+  "license": "MIT"
+}

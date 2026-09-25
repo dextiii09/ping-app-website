@@ -1,0 +1,11 @@
+# Old prototype with secrets (.env) and databases - never commit.
+ping web/
+# Secrets and local data
+.env
+.env.*
+*.db
+node_modules/
+.vercel/
+# Internal notes, kept out of the public repo
+AUDIT_REPORT.md
+SOCIAL_STATS_INTEGRATION_PLAN.md
