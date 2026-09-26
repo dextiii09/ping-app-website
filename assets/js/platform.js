@@ -36,8 +36,20 @@ class PingPlatform {
     return role === 'BUSINESS' ? 'campaigns' : 'discover';
   }
 
+  // After an update refresh (updater.js), reopen the screen the member was
+  // on. switchView's role guard still decides what they may see.
+  resumeView() {
+    try {
+      const view = sessionStorage.getItem('ping_resume_view');
+      sessionStorage.removeItem('ping_resume_view');
+      return view || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   init() {
-    this.currentView = this.homeView();
+    this.currentView = this.resumeView() || this.homeView();
 
     this.renderHeader();
     this.renderModals();

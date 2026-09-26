@@ -742,6 +742,49 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
 .platform-modal-window .auth-captcha { display: flex; justify-content: center; margin-top: 10px; }
 .platform-modal-window .auth-captcha:empty { display: none; }
 
+/* ─── "New version" bar (assets/js/updater.js) ─────────────────────────────── */
+/* Solid and crisp on purpose: it should read as part of Ping, not a faded overlay. */
+.ping-update {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: #161616;
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(230, 255, 26, 0.06);
+  font-family: var(--font-main);
+  font-size: 14px;
+  line-height: 1.3;
+  color: #f3f3ee;
+  transform: translateX(-50%);
+  animation: ping-update-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes ping-update-in { from { opacity: 0; transform: translate(-50%, 18px); } }
+.ping-update-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #e6ff1a; box-shadow: 0 0 12px rgba(230, 255, 26, 0.85); }
+.ping-update-text { white-space: nowrap; }
+.ping-update-text b { font-weight: 600; color: #fff; }
+.ping-update-text span { color: #b9b9b2; }
+.ping-update-btn { flex: none; min-height: 38px; padding: 0 18px; border: 0; border-radius: 999px; background: #e6ff1a; font: inherit; font-weight: 600; color: #0a0a0a; cursor: pointer; transition: box-shadow 0.2s; }
+.ping-update-btn:hover { box-shadow: 0 0 22px rgba(230, 255, 26, 0.5); }
+.ping-update-btn:focus-visible, .ping-update-close:focus-visible { outline: 2px solid #e6ff1a; outline-offset: 2px; }
+.ping-update-close { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; font-size: 20px; line-height: 1; color: #9a9a93; cursor: pointer; }
+.ping-update-close:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+@media (max-width: 768px) {
+  /* Phones: under the header, clear of the tab bar, toasts and the chat box. */
+  .ping-update { top: calc(72px + env(safe-area-inset-top, 0px)); bottom: auto; left: 12px; right: 12px; width: auto; max-width: none; border-radius: 18px; transform: none; animation-name: ping-update-in-phone; }
+  .ping-update-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .ping-update-text span { display: none; }
+}
+@keyframes ping-update-in-phone { from { opacity: 0; transform: translateY(-14px); } }
+@media (prefers-reduced-motion: reduce) { .ping-update { animation: none; } }
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* PHONES & TOUCH                                                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */

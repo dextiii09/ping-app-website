@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <!-- Stamped on every commit (git pre-commit hook); see assets/js/updater.js -->
+    <meta name="ping-version" content="20260926113504">
     <title>Ping · Local brands. Local creators. One ping apart.</title>
     <meta name="theme-color" content="#0a0a0a">
 
@@ -84,6 +86,10 @@
         import { renderSocialOnboarding } from './assets/js/views/socialOnboardingView.js';
         import { renderLanding } from './assets/js/views/landingView.js';
         import { coverScreen, revealScreen } from './assets/js/landing/motionUtils.js';
+        import { startUpdateWatcher } from './assets/js/updater.js';
+
+        // Notices when a newer version of Ping goes live (see updater.js).
+        startUpdateWatcher();
 
         // The landing intro and scroll-driven animations assume a fresh start
         // at the top; don't let the browser restore an old scroll position.
