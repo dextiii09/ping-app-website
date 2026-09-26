@@ -8,7 +8,7 @@
 // site key is live, or every log-in would be rejected.
 
 // Site key from the Cloudflare dashboard (public, safe to ship in client code).
-export const TURNSTILE_SITE_KEY = '';
+export const TURNSTILE_SITE_KEY = '0x4AAAAAAFEQ37VX9vJvi7Dx';
 
 // Localhost uses Cloudflare's always-pass test key instead.
 const TEST_SITE_KEY = '1x00000000000000000000BB';
