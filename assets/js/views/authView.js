@@ -48,7 +48,7 @@ const ASIDE = {
   BUSINESS: {
     kicker: 'For brands',
     title: 'Find the talent your customers <em>already follow.</em>',
-    points: ['Post a campaign with a fixed fee and slots', 'Swipe through the talent who apply', 'Every pick opens a chat straight away']
+    points: ['Post a campaign with a fixed fee and slots', 'See everyone who applies, then tap Connect', 'Every Connect opens a chat straight away']
   },
   login: {
     kicker: 'Welcome back',

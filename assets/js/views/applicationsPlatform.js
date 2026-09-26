@@ -7,7 +7,7 @@ import { formatWindow, timeAgo, windowsOverlap, briefWindow } from '../campaignU
 
 const STATUS = {
   PENDING: { label: 'Waiting', icon: 'ph-hourglass', cls: 'is-wait' },
-  SELECTED: { label: 'Selected', icon: 'ph-check-circle', cls: 'is-yes' },
+  SELECTED: { label: 'Connected', icon: 'ph-check-circle', cls: 'is-yes' },
   REJECTED: { label: 'Not selected', icon: 'ph-x-circle', cls: 'is-no' },
   AUTO_REJECTED: { label: 'Campaign filled', icon: 'ph-users-three', cls: 'is-no' }
 };
@@ -15,7 +15,7 @@ const STATUS = {
 const TABS = [
   { id: 'all', label: 'All', test: () => true },
   { id: 'waiting', label: 'Waiting', test: (a) => a.status === 'PENDING' },
-  { id: 'selected', label: 'Selected', test: (a) => a.status === 'SELECTED' },
+  { id: 'selected', label: 'Connected', test: (a) => a.status === 'SELECTED' },
   { id: 'closed', label: 'Not selected', test: (a) => a.status === 'REJECTED' || a.status === 'AUTO_REJECTED' }
 ];
 
@@ -41,7 +41,7 @@ export function renderApplicationsPlatform(container, { onOpenChat, onNavigate }
         <div class="app-empty">
           <div class="app-empty-icon"><i class="ph-fill ph-paper-plane-tilt"></i></div>
           <h2>No applications <em>yet</em></h2>
-          <p>Apply to open briefs from local brands. You can apply to as many as you like, and if a brand picks you, a chat opens straight away.</p>
+          <p>Apply to open briefs from local brands. You can apply to as many as you like, and if a brand connects with you, a chat opens straight away.</p>
           <div class="app-empty-actions"><button class="btn-gold" data-go="discover"><i class="ph-bold ph-compass"></i> Browse briefs</button></div>
         </div>
       ` : `

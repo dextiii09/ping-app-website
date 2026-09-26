@@ -41,7 +41,7 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
         <div class="app-stats">
           <div class="app-stat" title="Open briefs you can apply to"><b>${all.length}</b><span>For you</span></div>
           <div class="app-stat" title="Applications waiting for a decision"><b>${mine.filter(a => a.status === 'PENDING').length}</b><span>Waiting</span></div>
-          <div class="app-stat" title="Campaigns you've been selected for"><b class="is-lime">${mine.filter(a => a.status === 'SELECTED').length}</b><span>Selected</span></div>
+          <div class="app-stat" title="Campaigns brands connected with you for"><b class="is-lime">${mine.filter(a => a.status === 'SELECTED').length}</b><span>Connected</span></div>
           <div class="app-stat" title="Open chats with brands"><b>${store.getMatchesForCurrentUser().length}</b><span>Chats</span></div>
         </div>
       </div>
@@ -91,7 +91,7 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
     if (!app && clashes.length) action = '<span class="cm-pill is-no"><i class="ph-bold ph-calendar-x"></i> Date clash</span>';
     else if (!app) action = `<button class="btn-gold" data-apply="${escapeHtml(b.id)}">Apply</button>`;
     else if (app.status === 'PENDING') action = '<span class="cm-pill is-wait"><i class="ph-bold ph-hourglass"></i> Applied</span>';
-    else if (app.status === 'SELECTED') action = `<button class="btn-gold" data-chat="${escapeHtml(b.brandId)}"><i class="ph-bold ph-chat-circle-text"></i> Selected · Chat</button>`;
+    else if (app.status === 'SELECTED') action = `<button class="btn-gold" data-chat="${escapeHtml(b.brandId)}"><i class="ph-bold ph-chat-circle-text"></i> Connected · Chat</button>`;
     else action = '<span class="cm-pill is-no">Not selected</span>';
 
     return `
@@ -163,7 +163,7 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
               <div class="cm-help"><span id="cmPitchCount">0</span>/500</div>
             </div>
             <button type="submit" class="btn-gold cm-submit">Send application</button>
-            <p class="cm-apply-note">The brand sees your media kit and this note. If they pick you, a chat opens straight away.</p>
+            <p class="cm-apply-note">The brand sees your media kit and this note. If they Connect with you, a chat opens straight away.</p>
           </form>
         </div>
       </div>`;

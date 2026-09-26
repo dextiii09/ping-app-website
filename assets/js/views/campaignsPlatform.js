@@ -1,9 +1,9 @@
 // Ping Platform - Campaigns (brands). Post a campaign brief with a fixed fee,
-// a number of slots, the talent type and the date; then review the people
-// who applied one card at a time. A right swipe fills a slot and opens a chat
-// straight away; once every slot is filled, everyone still waiting is told
-// the campaign is filled (see decide_application() in
-// supabase/campaign_matching.sql).
+// a number of slots, the talent type and the date; then look through the
+// people who applied as a list of profiles. Connect fills a slot and opens a
+// chat straight away; Pass tells them they weren't picked. Once every slot
+// is filled, everyone still waiting is told the campaign is filled (see
+// decide_application() in supabase/campaign_matching.sql).
 import { store } from '../state.js';
 import { escapeHtml } from '../domUtils.js';
 import { NICHE_TAGS } from '../mockData.js';
@@ -14,13 +14,13 @@ import {
   timeAgo, toDateInput, greeting, greetName
 } from '../campaignUtils.js';
 
-const SWIPE_THRESHOLD = 110;
-
 export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, focusBriefId = null } = {}) {
   let mode = focusBriefId ? 'review' : 'list';
   let reviewId = focusBriefId;
   let busy = false;      // a decision is being saved / animated
-  let dragging = false;
+  let passArmed = null;  // creator id whose Pass is waiting for its second tap
+  let passTimer = null;
+  let conflictFor = null; // creator id shown in the scheduling-clash dialog
 
   container.innerHTML = '<div class="cm-main"></div><div class="cm-layer"></div>';
   const main = container.querySelector('.cm-main');
@@ -79,7 +79,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
           <div class="app-stat" title="Campaigns taking applications"><b>${live.length}</b><span>Live</span></div>
           <div class="app-stat" title="Applicants waiting for your decision"><b class="is-lime">${toReview}</b><span>To review</span></div>
           <div class="app-stat" title="Slots filled across all campaigns"><b>${filledSlots}/${totalSlots}</b><span>Slots filled</span></div>
-          <div class="app-stat" title="Chats with talent you've picked"><b>${store.getMatchesForCurrentUser().length}</b><span>Chats</span></div>
+          <div class="app-stat" title="Chats with talent you've connected with"><b>${store.getMatchesForCurrentUser().length}</b><span>Chats</span></div>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
         <div class="app-empty cm-empty">
           <div class="app-empty-icon"><i class="ph-fill ph-megaphone-simple"></i></div>
           <h2>Post your first <em>campaign</em></h2>
-          <p>Set a fixed fee, how many people you need and the date. Local talent applies, you swipe through them, and every pick opens a chat.</p>
+          <p>Set a fixed fee, how many people you need and the date. Local talent applies, you Connect with the ones you want, and every Connect opens a chat.</p>
           ${flowSteps()}
           <div class="app-empty-actions">
             <button class="btn-gold" data-cm="new"><i class="ph-bold ph-plus"></i> New campaign</button>
@@ -106,7 +106,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
   }
 
   function flowSteps() {
-    const steps = [['ph-megaphone-simple', 'Post a campaign'], ['ph-hand-waving', 'Talent applies'], ['ph-cards', 'Swipe to pick'], ['ph-chats-circle', 'Chat & deliver']];
+    const steps = [['ph-megaphone-simple', 'Post a campaign'], ['ph-hand-waving', 'Talent applies'], ['ph-user-plus', 'Connect'], ['ph-chats-circle', 'Chat & deliver']];
     return `<ol class="cm-flow">${steps.map(([icon, label], i) => `<li><span>${i + 1}</span><i class="ph-bold ${icon}"></i>${label}</li>`).join('')}</ol>`;
   }
 
@@ -117,7 +117,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     const who = talentMeta(b.talentType);
     let primary;
     if (st === 'OPEN' && c.pending > 0) {
-      primary = `<button class="btn-gold" data-cm="review" data-id="${escapeHtml(b.id)}"><i class="ph-bold ph-cards"></i> Review ${c.pending} applicant${c.pending === 1 ? '' : 's'}</button>`;
+      primary = `<button class="btn-gold" data-cm="review" data-id="${escapeHtml(b.id)}"><i class="ph-bold ph-users-three"></i> Review ${c.pending} applicant${c.pending === 1 ? '' : 's'}</button>`;
     } else if (st === 'OPEN') {
       primary = `<button class="btn-glass" disabled><i class="ph-bold ph-hourglass"></i> Waiting for applicants</button>`;
     } else {
@@ -142,7 +142,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
         </div>
         <div class="cm-card-foot">
           ${primary}
-          ${c.selected ? `<button class="btn-glass" data-cm="picked" data-id="${escapeHtml(b.id)}"><i class="ph-bold ph-user-check"></i> Selected (${c.selected})</button>` : ''}
+          ${c.selected ? `<button class="btn-glass" data-cm="picked" data-id="${escapeHtml(b.id)}"><i class="ph-bold ph-user-check"></i> Connected (${c.selected})</button>` : ''}
         </div>
       </article>`;
   }
@@ -174,37 +174,35 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
         </div>
 
         <div class="cm-review-body">
-          <div class="cm-deck-col">
+          <div class="cm-apps-col">
             ${pending.length && st === 'OPEN' ? `
-              <div class="cm-deck">${pending.slice(0, 3).map((a, i) => applicantCard(a, i)).reverse().join('')}</div>
-              <div class="cm-deck-actions">
-                <button class="cm-act is-pass" data-cm="pass" title="Pass (Left arrow)" aria-label="Pass"><i class="ph-bold ph-x"></i></button>
-                <span class="cm-deck-count"><b>${pending.length}</b> to review</span>
-                <button class="cm-act is-pick" data-cm="pick" title="Select (Right arrow)" aria-label="Select"><i class="ph-bold ph-check"></i></button>
+              <div class="cm-apps-head">
+                <h2><b>${pending.length}</b> waiting for you</h2>
+                <p>In the order they applied</p>
               </div>
-              <p class="cm-deck-hint">Swipe right to select, left to pass.<span class="cm-keys"> The arrow keys work too.</span></p>
+              <ul class="cm-apps">${pending.map(applicantRow).join('')}</ul>
             ` : deckDone(b, st, c)}
           </div>
 
           <aside class="cm-side">
             <div class="cm-side-box">
-              <h4>Selected <span>${selected.length}/${b.slots || 1}</span></h4>
+              <h4>Connected <span>${selected.length}/${b.slots || 1}</span></h4>
               ${selected.length ? `<ul class="cm-picked">${selected.map(pickedRow).join('')}</ul>`
-                : '<p class="cm-side-empty">No one yet. Swipe right on someone to fill a slot.</p>'}
+                : '<p class="cm-side-empty">No one yet. Tap Connect on someone to fill a slot.</p>'}
             </div>
             <div class="cm-side-box is-muted">
               <h4>How it works</h4>
               <ul class="cm-rules">
-                <li><i class="ph-bold ph-check"></i>A right swipe fills a slot and opens a chat with that person.</li>
+                <li><i class="ph-bold ph-user-plus"></i>Connect fills a slot and opens a chat with that person straight away.</li>
+                <li><i class="ph-bold ph-x-circle"></i>Pass tells them they weren't picked this time.</li>
                 <li><i class="ph-bold ph-users"></i>When all ${b.slots || 1} slot${(b.slots || 1) === 1 ? ' is' : 's are'} filled, everyone still waiting is told the campaign is filled.</li>
-                <li><i class="ph-bold ph-calendar-x"></i>If someone is already booked on these dates, you'll be asked before they're selected.</li>
+                <li><i class="ph-bold ph-calendar-x"></i>Ping doesn't double-book: someone already booked on these dates can't be connected.</li>
               </ul>
             </div>
           </aside>
         </div>
       </div>
     `;
-    bindDrag();
   }
 
   function deckDone(b, st, c) {
@@ -213,7 +211,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
         <div class="cm-deck-done">
           <div class="app-empty-icon"><i class="ph-fill ph-confetti"></i></div>
           <h2>All slots <em>filled</em></h2>
-          <p>${c.autoRejected ? `The ${c.autoRejected} other applicant${c.autoRejected === 1 ? ' was' : 's were'} told the campaign is filled.` : 'Your picks are in the Deal Room.'}</p>
+          <p>${c.autoRejected ? `The ${c.autoRejected} other applicant${c.autoRejected === 1 ? ' was' : 's were'} told the campaign is filled.` : 'Everyone you connected with is in the Deal Room.'}</p>
           <div class="app-empty-actions">
             <button class="btn-gold" data-cm="chats"><i class="ph-bold ph-chats-circle"></i> Open chats</button>
             <button class="btn-glass" data-cm="back">All campaigns</button>
@@ -239,40 +237,43 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
       </div>`;
   }
 
-  function applicantCard(a, depth) {
+  // One applicant in the review list: who they are, their numbers and pitch,
+  // and the two decisions.
+  function applicantRow(a) {
     const p = a.profile;
-    if (depth > 0) {
-      return `<article class="cm-app-card is-behind is-d${depth}" aria-hidden="true"><div class="cm-app-media"><img src="${escapeHtml(p.avatar)}" alt=""></div></article>`;
-    }
     const type = talentTypeOf(p) || 'INFLUENCER';
     const stats = talentHighlights(p);
     const work = portfolioOf(p).filter(w => w.image).slice(0, 3);
     const links = talentLinks(p).slice(0, 4);
+    const armed = passArmed === p.id;
+    const name = escapeHtml(p.name);
     return `
-      <article class="cm-app-card is-top" data-creator="${escapeHtml(p.id)}">
-        <div class="cm-app-media">
-          <img src="${escapeHtml(p.avatar)}" alt="${escapeHtml(p.name)}" draggable="false">
-          <div class="cm-app-shade"></div>
-          <div class="cm-app-badges">${talentBadge(type)}${p.isDemo ? '<span class="cm-demo">Demo</span>' : ''}</div>
-          <span class="cm-app-when">Applied ${escapeHtml(timeAgo(a.createdAt))}</span>
-          <div class="cm-app-id">
-            <h2>${escapeHtml(p.name)}${p.verified ? ' <i class="ph-fill ph-seal-check" title="Verified by Ping"></i>' : ''}</h2>
-            <p><i class="ph-fill ph-map-pin"></i>${escapeHtml(p.location || 'Location not set')}</p>
+      <li class="cm-applicant" data-creator="${escapeHtml(p.id)}">
+        <div class="cm-applicant-head">
+          <img class="cm-applicant-av" src="${escapeHtml(p.avatar)}" alt="">
+          <div class="cm-applicant-id">
+            <h3>${name}${p.verified ? ' <i class="ph-fill ph-seal-check" title="Verified by Ping"></i>' : ''}</h3>
+            <div class="cm-applicant-meta">
+              ${talentBadge(type)}
+              <span><i class="ph-fill ph-map-pin"></i> ${escapeHtml(p.location || 'Location not set')}</span>
+              <span class="cm-applicant-when">Applied ${escapeHtml(timeAgo(a.createdAt))}</span>
+              ${p.isDemo ? '<span class="cm-demo">Demo</span>' : ''}
+            </div>
           </div>
         </div>
-        <div class="cm-app-body">
-          ${stats.length ? `<div class="cm-app-stats">${stats.map(s => `<div><b>${escapeHtml(s.value)}</b><span>${escapeHtml(s.label)}</span></div>`).join('')}</div>` : ''}
-          <div class="cm-app-pitch${a.pitch ? '' : ' is-empty'}">
-            <span>Pitch note</span>
-            <p>${a.pitch ? escapeHtml(a.pitch) : 'No note. They applied with their profile.'}</p>
-          </div>
-          ${work.length ? `<div class="cm-app-work">${work.map(w => `<a href="${escapeHtml(w.url)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(w.url)}" alt="Past work" draggable="false"></a>`).join('')}</div>` : ''}
-          ${links.length ? `<div class="cm-app-links">${links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-up-right"></i>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
-          ${!work.length && !links.length && p.bio ? `<p class="cm-app-bio">${escapeHtml(p.bio)}</p>` : ''}
+        ${stats.length ? `<div class="cm-app-stats">${stats.map(st => `<div><b>${escapeHtml(st.value)}</b><span>${escapeHtml(st.label)}</span></div>`).join('')}</div>` : ''}
+        <div class="cm-app-pitch${a.pitch ? '' : ' is-empty'}">
+          <span>Pitch note</span>
+          <p>${a.pitch ? escapeHtml(a.pitch) : 'No note. They applied with their profile.'}</p>
         </div>
-        <span class="cm-stamp is-pick">Select</span>
-        <span class="cm-stamp is-pass">Pass</span>
-      </article>`;
+        ${work.length ? `<div class="cm-app-work">${work.map(w => `<a href="${escapeHtml(w.url)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(w.url)}" alt="Past work"></a>`).join('')}</div>` : ''}
+        ${links.length ? `<div class="cm-app-links">${links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-up-right"></i>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
+        ${!work.length && !links.length && p.bio ? `<p class="cm-app-bio">${escapeHtml(p.bio)}</p>` : ''}
+        <div class="cm-applicant-actions">
+          <button type="button" class="btn-glass cm-pass${armed ? ' is-armed' : ''}" data-cm="pass" data-id="${escapeHtml(p.id)}" aria-label="${armed ? `Tap again to pass on ${name}` : `Pass on ${name}`}">${armed ? 'Tap again to pass' : 'Pass'}</button>
+          <button type="button" class="btn-gold cm-connect" data-cm="connect" data-id="${escapeHtml(p.id)}" aria-label="Connect with ${name}"><i class="ph-bold ph-user-plus"></i> Connect</button>
+        </div>
+      </li>`;
   }
 
   function pickedRow(a) {
@@ -285,93 +286,76 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
       </li>`;
   }
 
-  // ─── Swiping ─────────────────────────────────────────────────────────────
+  // ─── Connect / Pass ──────────────────────────────────────────────────────
 
-  function topCard() {
-    return main.querySelector('.cm-app-card.is-top');
+  function rowFor(creatorId) {
+    return [...main.querySelectorAll('.cm-applicant')].find(r => r.getAttribute('data-creator') === creatorId) || null;
   }
 
-  function setStamp(card, dx) {
-    if (!card) return;
-    const k = Math.min(1, Math.abs(dx) / SWIPE_THRESHOLD);
-    card.querySelector('.cm-stamp.is-pick').style.opacity = dx > 0 ? k : 0;
-    card.querySelector('.cm-stamp.is-pass').style.opacity = dx < 0 ? k : 0;
+  function setActionsDisabled(disabled) {
+    main.querySelectorAll('[data-cm="connect"], [data-cm="pass"]').forEach((b) => { b.disabled = disabled; });
   }
 
-  function springBack(card) {
-    if (!card) return;
-    card.style.transition = '';
-    card.style.transform = '';
-    card.style.opacity = '';
-    setStamp(card, 0);
-  }
-
-  function flyOut(card, decision) {
+  // Folds a decided applicant out of the list before the redraw.
+  function collapse(row) {
     return new Promise((resolve) => {
-      if (!card) { resolve(); return; }
-      const right = decision === 'SELECT';
-      setStamp(card, right ? SWIPE_THRESHOLD : -SWIPE_THRESHOLD);
-      card.style.transition = 'transform 0.42s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.42s';
-      card.style.transform = `translate(${right ? 130 : -130}%, -4%) rotate(${right ? 16 : -16}deg)`;
-      card.style.opacity = '0';
-      setTimeout(resolve, 400);
+      if (!row) { resolve(); return; }
+      row.style.overflow = 'hidden';
+      row.style.height = `${row.offsetHeight}px`;
+      void row.offsetHeight; // start the transition from the measured height
+      row.style.transition = 'height 0.35s ease, opacity 0.25s ease, padding 0.35s ease';
+      Object.assign(row.style, { height: '0px', opacity: '0', paddingTop: '0px', paddingBottom: '0px', borderWidth: '0px' });
+      setTimeout(resolve, 360);
     });
   }
 
-  function bindDrag() {
-    const card = topCard();
-    if (!card) return;
-    let startX = 0;
-    let startY = 0;
-    let dx = 0;
-    card.addEventListener('pointerdown', (e) => {
-      if (busy || e.button > 0 || e.target.closest('a, button')) return;
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      dx = 0;
-      try { card.setPointerCapture(e.pointerId); } catch (err) { /* pointer already gone */ }
-      card.style.transition = 'none';
-    });
-    card.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      dx = e.clientX - startX;
-      const dy = (e.clientY - startY) * 0.25;
-      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 22}deg)`;
-      setStamp(card, dx);
-    });
-    const end = () => {
-      if (!dragging) return;
-      dragging = false;
-      if (dx > SWIPE_THRESHOLD) decide('SELECT');
-      else if (dx < -SWIPE_THRESHOLD) decide('REJECT');
-      else springBack(card);
-    };
-    card.addEventListener('pointerup', end);
-    card.addEventListener('pointercancel', end);
+  function disarmPass() {
+    clearTimeout(passTimer);
+    passTimer = null;
+    passArmed = null;
   }
 
-  async function decide(decision) {
-    if (busy) return;
-    const app = pendingApplicants()[0];
+  // Pass needs a second tap within a few seconds: it tells the applicant they
+  // weren't picked, and can't be undone.
+  function armPass(btn, creatorId) {
+    disarmPass();
+    passArmed = creatorId;
+    const name = rowFor(creatorId)?.querySelector('h3')?.textContent.trim() || '';
+    btn.classList.add('is-armed');
+    btn.textContent = 'Tap again to pass';
+    btn.setAttribute('aria-label', `Tap again to pass on ${name}`);
+    passTimer = setTimeout(() => {
+      passArmed = null;
+      const current = rowFor(creatorId)?.querySelector('[data-cm="pass"]');
+      if (current) {
+        current.classList.remove('is-armed');
+        current.textContent = 'Pass';
+        current.setAttribute('aria-label', `Pass on ${name}`);
+      }
+    }, 3500);
+  }
+
+  async function decide(decision, creatorId) {
+    if (busy || !creatorId) return;
+    const app = pendingApplicants().find(a => a.creatorId === creatorId);
     if (!app) return;
+    disarmPass();
     busy = true;
-    const card = topCard();
-    const animation = flyOut(card, decision);
+    setActionsDisabled(true);
     let res;
     try {
-      res = await store.decideApplicant(reviewId, app.creatorId, decision);
+      res = await store.decideApplicant(reviewId, creatorId, decision);
     } catch (err) {
       console.error('Applicant decision failed:', err);
       busy = false;
-      springBack(card);
+      setActionsDisabled(false);
       toast("That didn't save. Check your connection and try again.");
       return;
     }
 
     if (res.status === 'CONFLICT') {
       busy = false;
-      springBack(card);
+      setActionsDisabled(false);
       openConflict(app, res.conflicts || []);
       return;
     }
@@ -382,10 +366,11 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
       return;
     }
 
-    await animation;
+    await collapse(rowFor(creatorId));
     busy = false;
     render();
     if (res.status === 'SELECTED') openMatch(app, res);
+    else toast(`Passed on ${app.profile.name}.`);
   }
 
   // ─── Overlays ────────────────────────────────────────────────────────────
@@ -396,6 +381,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
 
   function openConflict(app, conflicts) {
     const p = app.profile;
+    conflictFor = app.creatorId;
     layer.innerHTML = `
       <div class="platform-modal-backdrop active cm-overlay">
         <div class="platform-modal-window cm-dialog">
@@ -403,7 +389,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
           <h2 class="app-modal-title">Scheduling <em>clash</em></h2>
           <p class="cm-dialog-text">${escapeHtml(p.name)} is already booked for:</p>
           <ul class="cm-clash-list">${conflicts.map(cf => `<li><b>${escapeHtml(cf.title)}</b><span>${escapeHtml(cf.window || '')}</span></li>`).join('')}</ul>
-          <p class="cm-dialog-note">Ping doesn't double-book talent, so they can't be picked for these dates. Pass on them to keep reviewing.</p>
+          <p class="cm-dialog-note">Ping doesn't double-book talent, so you can't connect with them for these dates. Pass on them to keep reviewing.</p>
           <div class="cm-dialog-actions">
             <button class="btn-gold" data-cm="clash-pass">Pass on them</button>
             <button class="btn-glass" data-cm="close-layer">Go back</button>
@@ -426,7 +412,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
             <span><i class="ph-fill ph-lightning"></i></span>
             <img src="${escapeHtml(p.avatar)}" alt="">
           </div>
-          <h2 class="app-modal-title">It's a <em>match</em></h2>
+          <h2 class="app-modal-title">You're <em>connected</em></h2>
           <p class="cm-dialog-text">${escapeHtml(p.name)} is in for “${escapeHtml(b.title)}”. Your chat is open, so sort out the details there.</p>
           <div class="cm-match-slots">${slotDots(b, true)}<span>${Math.min(b.slotsFilled || 0, b.slots || 1)} of ${b.slots || 1} slots filled</span></div>
           ${filledNow ? `<p class="cm-dialog-note">That was the last slot${res.auto_rejected ? `: ${res.auto_rejected} other applicant${res.auto_rejected === 1 ? ' was' : 's were'} told the campaign is filled` : ''}.</p>` : ''}
@@ -445,7 +431,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
       <div class="platform-modal-backdrop active cm-overlay">
         <div class="platform-modal-window cm-dialog">
           <button class="platform-modal-close" data-cm="close-layer">&times;</button>
-          <h2 class="app-modal-title">Selected for <em>this campaign</em></h2>
+          <h2 class="app-modal-title">Connected for <em>this campaign</em></h2>
           <p class="cm-dialog-text">${escapeHtml(b.title)}</p>
           <ul class="cm-picked is-wide">${picked.map(pickedRow).join('')}</ul>
         </div>
@@ -466,7 +452,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
             <div class="app-modal-icon"><i class="ph-fill ph-megaphone-simple"></i></div>
             <div>
               <h2 class="app-modal-title">New <em>campaign</em></h2>
-              <div class="app-modal-sub">Talent near you applies with one tap. You swipe through them and each pick opens a chat.</div>
+              <div class="app-modal-sub">Talent near you applies with one tap. You Connect with the ones you want, and each Connect opens a chat.</div>
             </div>
           </div>
 
@@ -659,9 +645,9 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     else if (action === 'review') { mode = 'review'; reviewId = id; closeLayer(); render(); window.scrollTo({ top: 0 }); }
     else if (action === 'back') { mode = 'list'; reviewId = null; closeLayer(); render(); }
     else if (action === 'picked') openPicked(id);
-    else if (action === 'pick') decide('SELECT');
-    else if (action === 'pass') decide('REJECT');
-    else if (action === 'clash-pass') { closeLayer(); decide('REJECT'); }
+    else if (action === 'connect') decide('SELECT', id);
+    else if (action === 'pass') { if (passArmed === id) decide('REJECT', id); else armPass(el, id); }
+    else if (action === 'clash-pass') { const who = conflictFor; closeLayer(); decide('REJECT', who); }
     else if (action === 'close-layer') closeLayer();
     else if (action === 'chat') { closeLayer(); onOpenChat && onOpenChat(id); }
     else if (action === 'chats') onOpenChat && onOpenChat(null);
@@ -682,17 +668,9 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     submitCreate(e.target);
   }
 
-  function onKey(e) {
-    if (mode !== 'review' || layer.innerHTML || busy) return;
-    if (e.target.closest && e.target.closest('input, textarea')) return;
-    if (e.key === 'ArrowRight') { e.preventDefault(); decide('SELECT'); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); decide('REJECT'); }
-  }
-
   container.addEventListener('click', onClick);
   container.addEventListener('input', onInput);
   container.addEventListener('submit', onSubmit);
-  document.addEventListener('keydown', onKey);
 
   function render() {
     if (mode === 'review') renderReview();
@@ -701,10 +679,10 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
 
   render();
 
-  // New applicants and decisions arrive live. Don't redraw mid-swipe; the
-  // decision flow redraws itself when it's done.
+  // New applicants and decisions arrive live. Don't redraw while a decision
+  // is being saved; the decision flow redraws itself when it's done.
   const unsubscribe = store.subscribe(() => {
-    if (!busy && !dragging) render();
+    if (!busy) render();
   });
 
   return () => {
@@ -712,6 +690,6 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     container.removeEventListener('click', onClick);
     container.removeEventListener('input', onInput);
     container.removeEventListener('submit', onSubmit);
-    document.removeEventListener('keydown', onKey);
+    disarmPass();
   };
 }

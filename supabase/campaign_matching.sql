@@ -2,8 +2,8 @@
 --
 -- Brand posts a campaign brief (fixed fee per talent, number of slots, talent
 -- type, deadline / event date) -> talent applies (optional pitch note, no
--- negotiation) -> the brand reviews applicants one by one (swipe) -> a right
--- swipe fills a slot and opens a chat straight away -> once every slot is
+-- negotiation) -> the brand looks through the applicants and taps Connect or
+-- Pass -> Connect fills a slot and opens a chat straight away -> once every slot is
 -- filled, the remaining applicants are auto-rejected and notified.
 --
 -- Run once in the Supabase SQL Editor, after schema.sql. Safe to re-run.
@@ -208,9 +208,9 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- 5. The brand's swipe: decide_application()
+-- 5. The brand's Connect / Pass: decide_application()
 -- ---------------------------------------------------------------------------
--- p_decision: 'SELECT' (swipe right) or 'REJECT' (swipe left).
+-- p_decision: 'SELECT' (Connect) or 'REJECT' (Pass).
 -- Returns jsonb with status:
 --   SELECTED  {match_id, slots, slots_filled, auto_rejected}
 --   REJECTED
@@ -219,7 +219,7 @@ end $$;
 --             selected (p_confirm_conflict is ignored; kept for old clients)
 --   FULL      the campaign has no open slots left
 --   ALREADY_DECIDED {application_status}
--- The brief row is locked, so two quick right swipes can't overfill it.
+-- The brief row is locked, so two quick Connects can't overfill it.
 create or replace function public.decide_application(
   p_brief uuid, p_creator uuid, p_decision text, p_confirm_conflict boolean default false)
 returns jsonb language plpgsql security definer set search_path = public as $$

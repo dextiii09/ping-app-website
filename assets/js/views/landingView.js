@@ -72,25 +72,26 @@ function bandItems(list, altClass) {
 const STEPS = [
   { title: 'Post a campaign', text: 'A brand sets a fixed fee, how many people it needs and the date. The campaign goes out to local talent straight away.' },
   { title: 'Talent applies', text: 'Creators, comedians, DJs and bands see the campaigns made for them. The fee is shown upfront, and applying takes one tap.' },
-  { title: 'Swipe to pick', text: 'The brand goes through applicants one card at a time: right to pick, left to pass. When every slot is filled, everyone else is told.' },
-  { title: 'Chat & deliver', text: 'Every pick opens a private chat straight away. Sort out the details, put them in a Smart Proposal, and get it done.' }
+  { title: 'Connect', text: 'The brand sees everyone who applied, with their profile, numbers and pitch, and taps Connect on the people it wants. When every slot is filled, everyone else is told.' },
+  { title: 'Chat & deliver', text: 'Every Connect opens a private chat straight away. Sort out the details, put them in a Smart Proposal, and get it done.' }
 ];
 
 const COMPARE = [
   ['What it costs', '20–30% of your budget', 'Free during the pilot'],
   ['Who you find', 'Whoever is on their roster', 'Local creators, comedians, DJs and bands'],
-  ['How you pick', 'A shortlist someone else chose', 'Swipe through everyone who applied'],
+  ['How you pick', 'A shortlist someone else chose', 'See everyone who applied, then Connect'],
   ['The price', 'Negotiated, then marked up', 'A fixed fee, shown upfront'],
-  ['How you talk', 'Through an account manager', 'Directly, the moment you pick']
+  ['How you talk', 'Through an account manager', 'Directly, the moment you Connect']
 ];
 
 const FAQ = [
   ['Is Ping really free?', 'Yes. During the pilot, Ping is completely free for both creators and brands. No commission, no subscription.'],
   ['Who is Ping for?', 'Local businesses such as cafés, salons, gyms, bars and boutiques, and the local talent they work with: influencers and content creators (roughly 1K to 300K followers), comedians, DJs, bands and other artists.'],
-  ['How does it work?', 'A brand posts a campaign with a fixed fee, how many people it needs and the date. Talent of that kind nearby can apply with one tap. The brand swipes through the applicants, and every pick opens a private chat straight away. When all the slots are filled, everyone else is told the campaign is filled.'],
+  ['How does it work?', 'A brand posts a campaign with a fixed fee, how many people it needs and the date. Talent of that kind nearby can apply with one tap. The brand looks through everyone who applied and taps Connect on the people it wants, and every Connect opens a private chat straight away. When all the slots are filled, everyone else is told the campaign is filled.'],
+  ['What does Connect mean?', 'Connect is how a brand picks someone for a campaign. The brand sees each applicant’s profile, numbers and pitch note first, then taps Connect or Pass. A Connect fills one of the campaign’s slots and opens a private chat between you. It replaces the old swipe.'],
   ['Do I need to be in a particular city?', 'No. Ping works wherever you are. Set your location when you sign up and discovery is built around it.'],
   ['Can I negotiate the fee?', 'No. The brand sets one fixed fee per person and it is shown upfront, so everyone knows what a campaign pays before applying. Details like timing and deliverables are agreed in the chat.'],
-  ['How many campaigns can I apply to?', 'As many as you like. Ping never double-books you: once you are picked for a campaign, your other applications on the same dates close, and brands can’t pick you for dates you are already booked.'],
+  ['How many campaigns can I apply to?', 'As many as you like. Ping never double-books you: once a brand connects with you for a campaign, your other applications on the same dates close, and brands can’t connect with you for dates you are already booked.'],
   ['How do payments work?', 'During the pilot you agree the scope and price in a Smart Proposal and settle payment directly with each other. In-app payments are on our roadmap.'],
   ['What is PingScore?', 'A trust signal on every profile, based on verification, how complete the profile is, and activity on Ping.']
 ];
@@ -158,7 +159,7 @@ function markup({ skipIntro, touch }) {
             <span class="lp-line lp-line-serif"><em>One ping apart.</em></span>
           </h1>
           <div class="lp-hero-row">
-            <p class="lp-hero-sub">Ping connects neighbourhood businesses with the creators, comedians, DJs and bands their customers already follow. Post a campaign, pick who you want, no agency in between.</p>
+            <p class="lp-hero-sub">Ping connects neighbourhood businesses with the creators, comedians, DJs and bands their customers already follow. Post a campaign, Connect with who you want, no agency in between.</p>
             <div class="lp-hero-ctas">
               ${btn('Find your match', { attrs: 'href="#choose" data-scroll="choose"' })}
               <a href="#how" class="lp-textlink" data-scroll="how">See how it works</a>
@@ -186,7 +187,7 @@ function markup({ skipIntro, touch }) {
             <div class="lp-facts" data-stagger>
               <div class="lp-fact"><span class="lp-fact-num">0%</span><span class="lp-fact-label">Commission for either side during the pilot</span></div>
               <div class="lp-fact"><span class="lp-fact-num">1K–<span data-count="300">300</span>K</span><span class="lp-fact-label">Followers. The micro &amp; nano creators Ping is built for</span></div>
-              <div class="lp-fact"><span class="lp-fact-num"><span data-count="4">4</span> steps</span><span class="lp-fact-label">From posting a campaign to chatting with your pick</span></div>
+              <div class="lp-fact"><span class="lp-fact-num"><span data-count="4">4</span> steps</span><span class="lp-fact-label">From posting a campaign to chatting with who you connect with</span></div>
             </div>
           </div>
         </div>
@@ -235,7 +236,7 @@ function markup({ skipIntro, touch }) {
       <section class="lp-section lp-how" id="how">
         <div class="lp-container lp-grid lp-section-head">
           <p class="lp-kicker lp-col-side"><b>(03)</b> How it works</p>
-          <h2 class="lp-h2 lp-col-main" data-split>Post it. Pick them. <em>Get it done.</em></h2>
+          <h2 class="lp-h2 lp-col-main" data-split>Post it. Connect. <em>Get it done.</em></h2>
         </div>
         <div class="lp-container lp-how-grid">
           <div class="lp-how-list">
@@ -330,7 +331,7 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <article class="lp-tile lp-tile-b">
-              <div class="lp-tile-copy"><h3>Post it. Swipe who applied.</h3><p>Set a fixed fee and how many people you need. Right to pick, left to pass.</p></div>
+              <div class="lp-tile-copy"><h3>Post it. Connect with who applied.</h3><p>Set a fixed fee and how many people you need, then tap Connect on the ones you want.</p></div>
               <div class="lp-tile-visual">
                 <div class="brief">
                   <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.boutique)}></span><div><b>Festive collection drop</b><span>Hue Boutique · Fashion</span></div><span class="brief-budget">₹8,000</span></div>
@@ -343,7 +344,7 @@ function markup({ skipIntro, touch }) {
               </div>
             </article>
             <article class="lp-tile lp-tile-c">
-              <div class="lp-tile-copy"><h3>Every pick opens a chat</h3><p>No account managers. Just you and the people you picked.</p></div>
+              <div class="lp-tile-copy"><h3>Every Connect opens a chat</h3><p>No account managers. Just you and the people you connected with.</p></div>
               <div class="lp-tile-visual">
                 <div class="chat-snip">
                   <span class="chat-in">Can you do a reel + stories by Friday?</span>

@@ -49,7 +49,7 @@ export function subscribeToApplications(callback) {
   return watchTable('brief_applications', refetch);
 }
 
-// The brand's swipe (see decide_application() in campaign_matching.sql).
+// The brand's Connect / Pass (see decide_application() in campaign_matching.sql).
 export async function decideApplicationRemote(briefId, creatorId, decision, confirmConflict = false) {
   const { data, error } = await supabase.rpc('decide_application', {
     p_brief: briefId, p_creator: creatorId, p_decision: decision, p_confirm_conflict: confirmConflict

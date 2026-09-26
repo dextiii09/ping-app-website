@@ -424,7 +424,7 @@ class StateStore {
       .sort((x, y) => y.createdAt - x.createdAt);
   }
 
-  // Everyone who applied to one campaign, first applied first (the swipe
+  // Everyone who applied to one campaign, first applied first (the review
   // deck order), each with their profile.
   getApplicantsForBrief(briefId) {
     return this.applications.filter(a => a.briefId === briefId)
@@ -482,7 +482,7 @@ class StateStore {
     return { alreadyApplied };
   }
 
-  // The brand's swipe on an applicant: 'SELECT' (right) or 'REJECT' (left).
+  // The brand's decision on an applicant: 'SELECT' (Connect) or 'REJECT' (Pass).
   // Real campaigns go through decide_application() on the server, which
   // fills the slot, checks the talent's dates, opens the chat and, once the
   // last slot is filled, auto-rejects everyone still waiting. Resolves its

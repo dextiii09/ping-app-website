@@ -462,42 +462,44 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
 .cm-slotmeter > span { font-family: var(--lp-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
 .cm-slotmeter b { font-size: 18px; font-weight: 600; color: var(--text-pure); }
 .cm-review-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: start; }
-.cm-deck-col { display: flex; flex-direction: column; align-items: center; }
-.cm-deck { position: relative; width: 100%; max-width: 440px; height: 600px; }
-.cm-deck-actions { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 24px; }
-.cm-act { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--border-medium); border-radius: 50%; background: #141414; font-size: 26px; color: var(--text-pure); cursor: pointer; transition: transform 0.25s var(--lp-ease), border-color 0.25s, color 0.25s, box-shadow 0.25s; }
-.cm-act:hover { transform: scale(1.08); }
-.cm-act.is-pass:hover { border-color: #ff5c7a; color: #ff5c7a; box-shadow: 0 0 26px rgba(255, 92, 122, 0.3); }
-.cm-act.is-pick { border-color: var(--gold); background: var(--gold); color: #0a0a0a; }
-.cm-act.is-pick:hover { box-shadow: 0 0 34px rgba(230, 255, 26, 0.5); }
-.cm-deck-count { min-width: 96px; font-family: var(--lp-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); text-align: center; }
-.cm-deck-count b { display: block; font-family: var(--font-main); font-size: 22px; letter-spacing: -0.03em; color: var(--text-pure); }
-.cm-deck-hint { margin: 14px 0 0; font-size: 12.5px; color: var(--text-dim); text-align: center; }
-@media (hover: none) { .cm-keys { display: none; } }
+.cm-apps-col { min-width: 0; }
+.cm-apps-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; margin-bottom: 14px; }
+.cm-apps-head h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.03em; color: var(--text-pure); }
+.cm-apps-head h2 b { color: var(--gold); }
+.cm-apps-head p { margin: 0; font-family: var(--lp-mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+.cm-apps { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.cm-applicant { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 1px solid var(--border-medium); border-radius: 24px; background: #121212; transition: border-color 0.25s; }
+.cm-applicant:hover { border-color: rgba(255, 255, 255, 0.22); }
+.cm-applicant-head { display: flex; align-items: center; gap: 14px; }
+.cm-applicant-av { flex: none; width: 60px; height: 60px; border: 2px solid var(--border-medium); border-radius: 50%; object-fit: cover; }
+.cm-applicant-id { flex: 1; min-width: 0; }
+.cm-applicant-id h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.03em; color: var(--text-pure); }
+.cm-applicant-id h3 i { font-size: 17px; color: var(--gold); }
+.cm-applicant-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+.cm-applicant-meta > span i { color: var(--text-dim); }
+.cm-applicant-when { font-family: var(--lp-mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-dim); }
+.cm-applicant .cm-app-stats { grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.cm-applicant .cm-app-pitch p { -webkit-line-clamp: 6; }
+.cm-applicant-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.cm-applicant-actions button { justify-content: center; min-width: 120px; }
+.cm-applicant-actions button:disabled { opacity: 0.55; cursor: progress; }
+.cm-connect i { font-size: 16px; }
+.cm-pass.is-armed { border-color: #ff5c7a; color: #ff5c7a; }
+/* Wider screens: name on the left, Pass / Connect on the right of the same
+   row, and stats at their natural width. */
+@media (min-width: 769px) {
+  .cm-applicant { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 18px; }
+  .cm-applicant > * { grid-column: 1 / -1; }
+  .cm-applicant > .cm-applicant-head { grid-row: 1; grid-column: 1; }
+  .cm-applicant > .cm-applicant-actions { grid-row: 1; grid-column: 2; align-self: center; padding-top: 0; border-top: 0; }
+  .cm-applicant .cm-app-stats { grid-template-columns: repeat(auto-fill, minmax(120px, 170px)); }
+}
 .cm-deck-done { width: 100%; max-width: 480px; padding: 48px 28px; border: 1px dashed var(--border-medium); border-radius: 28px; text-align: center; }
 .cm-deck-done h2 { font-size: 28px; font-weight: 500; letter-spacing: -0.04em; color: var(--text-pure); }
 .cm-deck-done h2 em { color: var(--gold); }
 .cm-deck-done p { max-width: 380px; margin: 12px auto 0; font-size: 14.5px; line-height: 1.6; color: var(--text-muted); }
 
-/* Applicant card */
-.cm-app-card { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-medium); border-radius: 28px; background: #121212; box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.9); user-select: none; transition: transform 0.4s var(--lp-ease), opacity 0.3s; }
-.cm-app-card.is-top { z-index: 3; cursor: grab; touch-action: pan-y; }
-.cm-app-card.is-top:active { cursor: grabbing; }
-.cm-app-card.is-behind { pointer-events: none; }
-.cm-app-card.is-behind .cm-app-media { height: 100%; }
-.cm-app-card.is-d1 { z-index: 2; transform: translateY(14px) scale(0.95); opacity: 0.55; }
-.cm-app-card.is-d2 { z-index: 1; transform: translateY(28px) scale(0.9); opacity: 0.28; }
-.cm-app-media { position: relative; flex: none; height: 46%; overflow: hidden; }
-.cm-app-media img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.cm-app-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 10, 0.35) 0%, rgba(10, 10, 10, 0) 35%, rgba(18, 18, 18, 0.96) 100%); }
-.cm-app-badges { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; }
-.cm-app-badges .cm-type { border-color: rgba(255, 255, 255, 0.2); background: rgba(10, 10, 10, 0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-.cm-app-when { position: absolute; top: 18px; right: 16px; padding: 4px 10px; border-radius: 999px; background: rgba(10, 10, 10, 0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-family: var(--lp-mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--text-muted); }
-.cm-app-id { position: absolute; left: 20px; right: 20px; bottom: 14px; }
-.cm-app-id h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.04em; color: #fff; }
-.cm-app-id h2 i { font-size: 20px; color: var(--gold); }
-.cm-app-id p { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
-.cm-app-body { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; padding: 14px 18px 18px; overflow: hidden; }
+/* Applicant details: stats, pitch, past work, links */
 .cm-app-stats { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 8px; }
 .cm-app-stats div { min-width: 0; padding: 9px 10px; border: 1px solid var(--border-subtle); border-radius: 14px; background: rgba(255, 255, 255, 0.03); text-align: center; }
 .cm-app-stats b { display: block; overflow: hidden; font-size: 14.5px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-pure); text-overflow: ellipsis; white-space: nowrap; }
@@ -514,9 +516,6 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
 .cm-app-links a { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--border-medium); border-radius: 999px; font-size: 12.5px; font-weight: 500; color: var(--text-pure); text-decoration: none; transition: border-color 0.2s, color 0.2s; }
 .cm-app-links a:hover { border-color: var(--gold); color: var(--gold); }
 .cm-app-bio { display: -webkit-box; margin: 0; overflow: hidden; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-.cm-stamp { position: absolute; top: 26px; z-index: 4; padding: 6px 14px; border: 3px solid currentColor; border-radius: 10px; background: rgba(10, 10, 10, 0.55); font-size: 24px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0; pointer-events: none; }
-.cm-stamp.is-pick { left: 22px; color: var(--gold); transform: rotate(-14deg); }
-.cm-stamp.is-pass { right: 22px; color: #ff5c7a; transform: rotate(14deg); }
 
 /* Review side panel */
 .cm-side { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 14px; }
@@ -675,8 +674,6 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
   .cm-flow li { height: 32px; font-size: 12px; }
   .cm-review-head { align-items: stretch; }
   .cm-slotmeter { justify-content: space-between; }
-  .cm-deck { height: min(560px, calc(100svh - 300px)); min-height: 460px; }
-  .cm-app-id h2 { font-size: 24px; }
   .cm-grid-2 { grid-template-columns: 1fr; }
   .cm-brief-facts li { grid-template-columns: 18px 88px 1fr; }
   .cm-row { flex-wrap: wrap; }
@@ -780,23 +777,20 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
   .cm-feed-bar { flex-wrap: nowrap; }
   .notif-list { max-height: calc(100vh - 200px); max-height: calc(100dvh - 200px); }
 
-  /* Applicant review: back and slots share a row, the title is compact, and
-     the deck is sized so the card and both buttons fit above the tab bar. */
+  /* Applicant review: back and slots share a row, and a compact title. */
   .cm-review-head { align-items: center; gap: 10px 12px; margin-bottom: 14px; padding-bottom: 14px; }
   .cm-back { height: 40px; }
   .cm-slotmeter { order: 1; margin-left: auto; padding: 6px 12px; }
   .cm-review-meta { order: 2; flex: 1 1 100%; min-width: 0; }
   .cm-review-title { font-size: 24px; }
-  .cm-deck { height: clamp(340px, calc(100svh - 406px), 560px); min-height: 0; }
-  /* The pitch and past work can scroll inside the card (vertical drags scroll;
-     sideways swipes still pick or pass). */
-  .cm-app-card .cm-app-body { padding-bottom: 34px; }
-  .cm-app-card.is-top .cm-app-body { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
-  .cm-app-card.is-top .cm-app-body::-webkit-scrollbar { display: none; }
-  /* Overlaps the card's bottom edge, and stays pinned above the tab bar on
-     short screens so Pass / Select are always reachable. */
-  .cm-deck-actions { position: sticky; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin-top: -30px; }
-  .cm-deck-hint { margin-top: 10px; }
+  /* Applicant list: full-width Pass / Connect under each profile. */
+  .cm-applicant { padding: 14px; border-radius: 20px; }
+  .cm-applicant-av { width: 52px; height: 52px; }
+  .cm-applicant-actions { display: grid; grid-template-columns: 1fr 1.6fr; }
+  .cm-applicant-actions button { min-width: 0; }
+  .cm-applicant .cm-app-stats { grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); }
+  .cm-applicant .cm-app-pitch p { -webkit-line-clamp: 4; }
+  .cm-applicant .cm-app-work a { height: 56px; }
 
   /* Deal Room on phones: an open conversation fills the screen and the tab
      bar steps aside so the message box is never covered. */
@@ -832,16 +826,6 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
   .platform-viewport .glass-box { padding: 20px !important; }
 }
 
-/* Short phones (iPhone SE and similar): a one-line campaign title so more of
-   the applicant card fits. Status and type show on the campaign list. */
-@media (max-width: 768px) and (max-height: 760px) {
-  .cm-review-tags { display: none; }
-  .cm-review-title { overflow: hidden; font-size: 21px; white-space: nowrap; text-overflow: ellipsis; }
-  .cm-review-sub { margin-top: 4px; font-size: 13px; }
-  .cm-deck { height: clamp(320px, calc(100svh - 330px), 560px); }
-  .cm-app-media { height: 40%; }
-}
-
 @media (max-width: 420px) {
   .deal-prop-label { display: none; }
   #btnOpenProposalDrawer { justify-content: center; width: 40px; height: 40px; min-height: 0; padding: 0 !important; }
@@ -858,7 +842,7 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
   .platform-modal-backdrop { align-items: flex-end; padding: 0; }
   .platform-modal-window { width: 100%; max-width: none; max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); padding: 24px 18px calc(24px + env(safe-area-inset-bottom, 0px)); border-bottom: 0; border-radius: 24px 24px 0 0; }
   .platform-modal-backdrop.active .platform-modal-window { animation-name: app-sheet-in; }
-  /* Short confirmations ("It's a match", a scheduling clash) stay as cards. */
+  /* Short confirmations ("You're connected", a scheduling clash) stay as cards. */
   .platform-modal-backdrop:has(> .cm-dialog) { align-items: center; padding: 16px; }
   .platform-modal-window.cm-dialog { border-bottom: 1px solid var(--border-medium); border-radius: 24px; }
   .app-cols { grid-template-columns: minmax(0, 1fr) !important; }

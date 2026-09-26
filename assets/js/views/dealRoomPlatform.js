@@ -17,7 +17,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
   const setThreadOpen = (open) => document.body.classList.toggle('deal-thread-open', open);
   let icebreakers = [];
   let loadingIcebreakers = false;
-  // Guards against refetching on every unrelated store.notify() (a swipe
+  // Guards against refetching on every unrelated store.notify() (a decision
   // elsewhere, a brief loading in, etc.) - only actually regenerate when
   // the conversation shown here has changed.
   let lastIcebreakerKey = null;
