@@ -285,7 +285,7 @@ begin
   ua := least(me, p_creator);
   ub := greatest(me, p_creator);
   insert into matches (user_a, user_b, last_message, last_sender)
-  values (ua, ub, left('Selected for "' || b.title || '"', 500), me)
+  values (ua, ub, left('Connected for "' || b.title || '"', 500), me)
   on conflict (user_a, user_b) do nothing
   returning id into mid;
   if mid is null then select id into mid from matches where user_a = ua and user_b = ub; end if;
@@ -302,12 +302,12 @@ begin
   when_text := case when win_start = win_end then to_char(win_end, 'DD Mon YYYY')
                     else to_char(win_start, 'DD Mon') || ' - ' || to_char(win_end, 'DD Mon YYYY') end;
   insert into messages (match_id, sender_id, text, type)
-  values (mid, me, left('Selected for "' || b.title || '" · ' || b.budget || ' fixed · ' || when_text, 2000), 'system');
+  values (mid, me, left('Connected for "' || b.title || '" · ' || b.budget || ' fixed · ' || when_text, 2000), 'system');
 
   select coalesce(nullif(company, ''), name) into brand_name from profiles where id = me;
   insert into notifications (user_id, type, title, text)
   values (p_creator, 'match', 'You''re in!',
-          left(coalesce(brand_name, 'A brand') || ' selected you for "' || b.title || '". Your chat is open in the Deal Room.', 500));
+          left(coalesce(brand_name, 'A brand') || ' connected with you for "' || b.title || '". Your chat is open in the Deal Room.', 500));
 
   -- They're booked for these dates now: close their other pending
   -- applications that overlap, so no brand can double-book them.

@@ -126,7 +126,7 @@ const SCREENS = [
         <i class="ph-bold ph-dots-three"></i>
       </div>
       <div class="ps-chat-body">
-        <div class="ps-note"><i class="ph-fill ph-megaphone-simple"></i> Selected for “Weekend brunch reels” · ₹5,000 fixed</div>
+        <div class="ps-note"><i class="ph-fill ph-megaphone-simple"></i> Connected for “Weekend brunch reels” · ₹5,000 fixed</div>
         <div class="ps-msg ps-msg-in">Welcome aboard! Can you shoot Saturday at 11?</div>
         <div class="ps-typing"><i></i><i></i><i></i></div>
         <div class="ps-msg ps-msg-out">Perfect, see you there ☕</div>

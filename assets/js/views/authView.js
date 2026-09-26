@@ -16,6 +16,7 @@ import { NICHE_TAGS } from '../mockData.js';
 import { TALENT_TYPES } from '../talentTypes.js';
 import { escapeHtml } from '../domUtils.js';
 import { PingMap } from '../landing/pingMap.js';
+import { getCaptchaToken } from '../captcha.js';
 
 export const INTENDED_ROLE_KEY = 'ping_intended_role';
 
@@ -144,11 +145,15 @@ export function renderAuthGate(container, opts = {}) {
       </aside>
       <main class="auth-main">
         <div class="auth-card"></div>
+        <div class="auth-captcha" id="authCaptcha" aria-live="polite"></div>
       </main>
     </div>
   `;
   const card = container.querySelector('.auth-card');
   const asideCopy = container.querySelector('.auth-aside-copy');
+  // Outside the card, which re-renders: a Turnstile check must survive that.
+  const captchaHost = container.querySelector('#authCaptcha');
+  const captcha = () => getCaptchaToken(captchaHost);
 
   let map = null;
   if (window.matchMedia('(min-width: 1025px)').matches) {
@@ -553,6 +558,7 @@ export function renderAuthGate(container, opts = {}) {
     if (code.includes('same-password')) return 'Your new password must be different from the old one.';
     if (code.includes('invalid-credential')) return 'Incorrect email or password.';
     if (code.includes('too-many-requests')) return 'Too many attempts. Please wait a minute and try again.';
+    if (code.includes('captcha')) return 'We couldn\'t check that you\'re human. Please try again, and if it keeps failing, pause any ad or content blocker for this site.';
     console.error('Auth error:', err);
     return `Something went wrong${code && code !== 'auth/unknown' ? ` (${code})` : ''}. Please try again.`;
   }
@@ -598,7 +604,7 @@ export function renderAuthGate(container, opts = {}) {
       if (!okEmail || !okPw) { focusFirst(); return; }
       await withBusy(async () => {
         try {
-          await logIn(s.values.email, password);
+          await logIn(s.values.email, password, await captcha());
           // Success: index.html's auth listener takes it from here.
         } catch (err) {
           const code = (err && err.code) || '';
@@ -615,7 +621,7 @@ export function renderAuthGate(container, opts = {}) {
       if (!validateEmail()) { focusFirst(); return; }
       await withBusy(async () => {
         try {
-          await resetPassword(s.values.email);
+          await resetPassword(s.values.email, await captcha());
           s.resendAt = Date.now() + RESEND_COOLDOWN * 1000;
           s.screen = 'forgot-sent';
           s.anim = 'fwd';
@@ -677,7 +683,8 @@ export function renderAuthGate(container, opts = {}) {
           await signUp({
             email: s.values.email, password, name: s.values.name, role: s.role,
             company: isBrand() ? s.values.company : '', location: s.values.location, tags: s.tags,
-            talentType: isBrand() ? null : s.talentType
+            talentType: isBrand() ? null : s.talentType,
+            captchaToken: await captcha()
           });
           // Only reached if email confirmation is off: the auth listener takes over.
         } catch (err) {
@@ -732,8 +739,8 @@ export function renderAuthGate(container, opts = {}) {
     if (s.resendAt > Date.now() || s.busy) return;
     await withBusy(async () => {
       try {
-        if (kind === 'signup') await resendConfirmation(s.values.email);
-        else await resetPassword(s.values.email);
+        if (kind === 'signup') await resendConfirmation(s.values.email, await captcha());
+        else await resetPassword(s.values.email, await captcha());
         s.resendAt = Date.now() + RESEND_COOLDOWN * 1000;
         s.notice = { type: 'success', text: `Sent again to ${s.values.email}.` };
       } catch (err) {

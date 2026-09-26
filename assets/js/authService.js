@@ -40,6 +40,7 @@ function wrapAuthError(error) {
   else if (error.status === 429 || msg.includes('rate limit')) code = 'auth/too-many-requests';
   else if (msg.includes('email') && msg.includes('invalid')) code = 'auth/invalid-email';
   else if (c === 'same_password' || msg.includes('different from the old')) code = 'auth/same-password';
+  else if (c === 'captcha_failed' || msg.includes('captcha')) code = 'auth/captcha';
   const e = new Error(error.message);
   e.code = code;
   return e;
@@ -70,13 +71,16 @@ export async function getUserProfile(uid) {
 }
 
 // role must be 'INFLUENCER' or 'BUSINESS' - the DB trigger/policies reject ADMIN.
-export async function signUp({ email, password, name, role, company, location, tags, talentType }) {
+// captchaToken (Cloudflare Turnstile, see captcha.js) is only sent when bot
+// protection is set up; Supabase checks it once CAPTCHA protection is on.
+export async function signUp({ email, password, name, role, company, location, tags, talentType, captchaToken }) {
   const cleanTags = (tags || []).map(t => t.trim()).filter(Boolean);
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: window.location.origin,
+      ...(captchaToken ? { captchaToken } : {}),
       data: {
         name, role, company: company || '', location: location || 'India',
         tags: cleanTags.length ? cleanTags : ['New Member'],
@@ -132,8 +136,8 @@ export async function removeAvatarFile(uid, url) {
   await supabase.storage.from('avatars').remove([path]);
 }
 
-export async function logIn(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+export async function logIn(email, password, captchaToken = null) {
+  const { error } = await supabase.auth.signInWithPassword({ email, password, ...(captchaToken ? { options: { captchaToken } } : {}) });
   if (error) throw wrapAuthError(error);
 }
 
@@ -173,13 +177,13 @@ export async function logOut() {
   await supabase.auth.signOut();
 }
 
-export async function resetPassword(email) {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+export async function resetPassword(email, captchaToken = null) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, ...(captchaToken ? { captchaToken } : {}) });
   if (error) throw wrapAuthError(error);
 }
 
-export async function resendConfirmation(email) {
-  const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin } });
+export async function resendConfirmation(email, captchaToken = null) {
+  const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin, ...(captchaToken ? { captchaToken } : {}) } });
   if (error) throw wrapAuthError(error);
 }
 

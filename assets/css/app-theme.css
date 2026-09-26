@@ -738,6 +738,10 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
   .ops-req-actions button { flex: 1; }
 }
 
+/* Cloudflare Turnstile in Settings (password reset): only shown when a tick is needed. */
+.platform-modal-window .auth-captcha { display: flex; justify-content: center; margin-top: 10px; }
+.platform-modal-window .auth-captcha:empty { display: none; }
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* PHONES & TOUCH                                                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */

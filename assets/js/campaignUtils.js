@@ -102,7 +102,7 @@ export function timeAgo(ms) {
 
 // The note that opens every campaign chat (mirrors decide_application()).
 export function selectedNote(b) {
-  return `Selected for "${b.title}" · ${b.budget} fixed · ${formatWindow(b)}`;
+  return `Connected for "${b.title}" · ${b.budget} fixed · ${formatWindow(b)}`;
 }
 
 // First name for "Good evening, Priya" - but a business called "The Brew

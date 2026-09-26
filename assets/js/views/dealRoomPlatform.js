@@ -27,7 +27,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
     if (messages.length === 0) return '';
     const otherName = match.otherUser?.name || 'them';
     return messages.slice(-8).map(m => {
-      // The campaign note ("Selected for ...") gives the suggestions context.
+      // The campaign note ("Connected for ...") gives the suggestions context.
       if (m.type === 'system') return `[${m.text}]`;
       const speaker = m.senderId === store.currentUser.id ? 'Me' : otherName;
       if (m.type === 'proposal' && m.proposalData) {
@@ -267,7 +267,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
   function renderMessageItem(msg, match) {
     const isMine = msg.senderId === store.currentUser.id;
 
-    // The note that opens a campaign chat ("Selected for ...").
+    // The note that opens a campaign chat ("Connected for ...").
     if (msg.type === 'system') {
       return `
         <div class="deal-system">

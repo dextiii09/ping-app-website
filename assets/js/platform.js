@@ -322,6 +322,7 @@ class PingPlatform {
               <button class="btn-glass" id="btnSendPasswordReset" style="width:100%; padding:10px; font-size:12.5px;">
                 <i class="ph-fill ph-lock-key"></i> Send Password Reset Email
               </button>
+              <div class="auth-captcha" id="settingsCaptcha" aria-live="polite"></div>
               <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; cursor:pointer;">
                 <span style="font-size:12.5px; color:var(--text-muted); line-height:1.4;">Email me about new matches, messages and pitches</span>
                 <input type="checkbox" id="toggleEmailNotifs" ${user.settings?.emailNotifications === false ? '' : 'checked'} style="width:18px; height:18px; accent-color:var(--gold); flex-shrink:0;">
@@ -431,7 +432,9 @@ class PingPlatform {
         btnPasswordReset.disabled = true;
         try {
           const { resetPassword } = await import('./authService.js');
-          await resetPassword(store.currentUser.email);
+          const { getCaptchaToken } = await import('./captcha.js');
+          const token = await getCaptchaToken(document.getElementById('settingsCaptcha'));
+          await resetPassword(store.currentUser.email, token);
           this.showToast(`Password reset email sent to ${store.currentUser.email}`);
         } catch (err) {
           console.error('Password reset failed:', err);

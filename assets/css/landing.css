@@ -1307,6 +1307,10 @@ html.lenis, html.lenis body { height: auto; }
 .auth-legal a { color: var(--lp-muted); text-decoration: underline; text-underline-offset: 2px; }
 .auth-legal a:hover { color: var(--lp-lime); }
 
+/* Cloudflare Turnstile: only takes space when it shows a check to tick. */
+.auth-captcha { display: flex; justify-content: center; width: 100%; max-width: 456px; margin-top: 16px; }
+.auth-captcha:empty { display: none; }
+
 /* ─── Phones & touch ─────────────────────────────────────────────────────── */
 /* Sign-up steps slide in sideways; don't let that widen the page. */
 .auth-shell { overflow-x: hidden; overflow-x: clip; }

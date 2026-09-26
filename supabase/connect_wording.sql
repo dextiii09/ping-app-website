@@ -1,43 +1,6 @@
--- Ping - no double-booking (run after campaign_matching.sql; safe to re-run).
--- Same code as the matching parts of campaign_matching.sql.
-
--- True when the signed-in talent is already booked (SELECTED) for another
--- campaign whose dates overlap this one. Only answers for yourself.
-create or replace function public.has_date_clash(p_creator uuid, p_brief uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select p_creator = auth.uid() and exists (
-    select 1
-      from brief_applications oa
-      join live_briefs ob on ob.id = oa.brief_id
-      join live_briefs nb on nb.id = p_brief
-     where oa.creator_id = p_creator and oa.status = 'SELECTED' and oa.brief_id <> p_brief
-       and daterange(coalesce(ob.starts_on, ob.ends_on, ob.deadline::date), coalesce(ob.ends_on, ob.deadline::date), '[]')
-        && daterange(coalesce(nb.starts_on, nb.ends_on, nb.deadline::date), coalesce(nb.ends_on, nb.deadline::date), '[]')
-  );
-$$;
-revoke all on function public.has_date_clash(uuid, uuid) from public, anon;
-grant execute on function public.has_date_clash(uuid, uuid) to authenticated;
-
--- Talent can apply to any number of OPEN briefs made for their talent type
--- (or open to all), until the deadline, as long as they aren't already
--- booked on those dates. The fee is fixed, so there is no
--- counter-offer: `rate` is no longer written. Decisions only happen through
--- decide_application(), so there is still no update policy.
-drop policy if exists apps_insert on public.brief_applications;
-create policy apps_insert on public.brief_applications for insert to authenticated
-  with check (
-    creator_id = auth.uid() and status = 'PENDING' and decided_at is null and match_id is null
-    and exists (
-      select 1 from public.profiles p
-       where p.id = auth.uid() and p.role = 'INFLUENCER'
-         and exists (
-           select 1 from public.live_briefs b
-            where b.id = brief_id and b.status = 'OPEN' and b.deadline >= now() and b.brand_id <> auth.uid()
-              and (b.talent_type = 'ANY' or b.talent_type = coalesce(p.talent_type, 'INFLUENCER'))
-         )
-    )
-    and not public.has_date_clash(auth.uid(), brief_id)
-  );
+-- Ping - Connect wording: the chat note says "Connected for ..." and the
+-- notification says "<brand> connected with you for ...". Safe to re-run.
+-- (Same function as in campaign_matching.sql.)
 
 create or replace function public.decide_application(
   p_brief uuid, p_creator uuid, p_decision text, p_confirm_conflict boolean default false)
