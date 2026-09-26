@@ -117,8 +117,26 @@ alter table public.brief_applications add constraint brief_applications_status_c
   check (status in ('PENDING','SELECTED','REJECTED','AUTO_REJECTED'));
 create index if not exists brief_applications_creator_status on public.brief_applications (creator_id, status);
 
+-- True when the signed-in talent is already booked (SELECTED) for another
+-- campaign whose dates overlap this one. Only answers for yourself.
+create or replace function public.has_date_clash(p_creator uuid, p_brief uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select p_creator = auth.uid() and exists (
+    select 1
+      from brief_applications oa
+      join live_briefs ob on ob.id = oa.brief_id
+      join live_briefs nb on nb.id = p_brief
+     where oa.creator_id = p_creator and oa.status = 'SELECTED' and oa.brief_id <> p_brief
+       and daterange(coalesce(ob.starts_on, ob.ends_on, ob.deadline::date), coalesce(ob.ends_on, ob.deadline::date), '[]')
+        && daterange(coalesce(nb.starts_on, nb.ends_on, nb.deadline::date), coalesce(nb.ends_on, nb.deadline::date), '[]')
+  );
+$$;
+revoke all on function public.has_date_clash(uuid, uuid) from public, anon;
+grant execute on function public.has_date_clash(uuid, uuid) to authenticated;
+
 -- Talent can apply to any number of OPEN briefs made for their talent type
--- (or open to all), until the deadline. The fee is fixed, so there is no
+-- (or open to all), until the deadline, as long as they aren't already
+-- booked on those dates. The fee is fixed, so there is no
 -- counter-offer: `rate` is no longer written. Decisions only happen through
 -- decide_application(), so there is still no update policy.
 drop policy if exists apps_insert on public.brief_applications;
@@ -134,6 +152,7 @@ create policy apps_insert on public.brief_applications for insert to authenticat
               and (b.talent_type = 'ANY' or b.talent_type = coalesce(p.talent_type, 'INFLUENCER'))
          )
     )
+    and not public.has_date_clash(auth.uid(), brief_id)
   );
 
 create or replace function public.on_application_insert()
@@ -195,8 +214,9 @@ end $$;
 -- Returns jsonb with status:
 --   SELECTED  {match_id, slots, slots_filled, auto_rejected}
 --   REJECTED
---   CONFLICT  {conflicts: [{title, starts_on, ends_on}]} - nothing changed;
---             call again with p_confirm_conflict = true to select anyway
+--   CONFLICT  {conflicts: [{title, starts_on, ends_on}]} - nothing changed:
+--             they're already booked on overlapping dates, so they can't be
+--             selected (p_confirm_conflict is ignored; kept for old clients)
 --   FULL      the campaign has no open slots left
 --   ALREADY_DECIDED {application_status}
 -- The brief row is locked, so two quick right swipes can't overfill it.
@@ -257,7 +277,7 @@ begin
      and daterange(coalesce(ob.starts_on, ob.ends_on, ob.deadline::date), coalesce(ob.ends_on, ob.deadline::date), '[]')
          && daterange(win_start, win_end, '[]');
 
-  if jsonb_array_length(conflicts) > 0 and not p_confirm_conflict then
+  if jsonb_array_length(conflicts) > 0 then
     return jsonb_build_object('status', 'CONFLICT', 'conflicts', conflicts);
   end if;
 
@@ -289,6 +309,21 @@ begin
   values (p_creator, 'match', 'You''re in!',
           left(coalesce(brand_name, 'A brand') || ' selected you for "' || b.title || '". Your chat is open in the Deal Room.', 500));
 
+  -- They're booked for these dates now: close their other pending
+  -- applications that overlap, so no brand can double-book them.
+  with closed as (
+    update brief_applications oa set status = 'AUTO_REJECTED', decided_at = now()
+      from live_briefs ob
+     where ob.id = oa.brief_id and oa.creator_id = p_creator and oa.status = 'PENDING' and oa.brief_id <> p_brief
+       and daterange(coalesce(ob.starts_on, ob.ends_on, ob.deadline::date), coalesce(ob.ends_on, ob.deadline::date), '[]')
+           && daterange(win_start, win_end, '[]')
+    returning ob.title
+  )
+  insert into notifications (user_id, type, title, text)
+  select p_creator, 'system', 'Application closed',
+         left('Your application for "' || closed.title || '" was closed because you''re booked for "' || b.title || '" on the same dates.', 500)
+    from closed;
+
   -- Last slot filled: everyone still waiting is told the campaign is filled.
   if b.status = 'FILLED' then
     with rejected as (
@@ -303,8 +338,7 @@ begin
   end if;
 
   return jsonb_build_object('status', 'SELECTED', 'match_id', mid, 'slots', b.slots,
-                            'slots_filled', b.slots_filled, 'auto_rejected', n_auto,
-                            'conflict_overridden', jsonb_array_length(conflicts) > 0);
+                            'slots_filled', b.slots_filled, 'auto_rejected', n_auto);
 end $$;
 
 revoke all on function public.decide_application(uuid, uuid, text, boolean) from public, anon;

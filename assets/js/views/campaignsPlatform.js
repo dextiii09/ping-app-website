@@ -351,7 +351,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     card.addEventListener('pointercancel', end);
   }
 
-  async function decide(decision, confirmConflict = false) {
+  async function decide(decision) {
     if (busy) return;
     const app = pendingApplicants()[0];
     if (!app) return;
@@ -360,7 +360,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     const animation = flyOut(card, decision);
     let res;
     try {
-      res = await store.decideApplicant(reviewId, app.creatorId, decision, { confirmConflict });
+      res = await store.decideApplicant(reviewId, app.creatorId, decision);
     } catch (err) {
       console.error('Applicant decision failed:', err);
       busy = false;
@@ -403,9 +403,9 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
           <h2 class="app-modal-title">Scheduling <em>clash</em></h2>
           <p class="cm-dialog-text">${escapeHtml(p.name)} is already booked for:</p>
           <ul class="cm-clash-list">${conflicts.map(cf => `<li><b>${escapeHtml(cf.title)}</b><span>${escapeHtml(cf.window || '')}</span></li>`).join('')}</ul>
-          <p class="cm-dialog-note">You can still select them. Just check in the chat that they can do both.</p>
+          <p class="cm-dialog-note">Ping doesn't double-book talent, so they can't be picked for these dates. Pass on them to keep reviewing.</p>
           <div class="cm-dialog-actions">
-            <button class="btn-gold" data-cm="confirm-pick">Select anyway</button>
+            <button class="btn-gold" data-cm="clash-pass">Pass on them</button>
             <button class="btn-glass" data-cm="close-layer">Go back</button>
           </div>
         </div>
@@ -429,7 +429,6 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
           <h2 class="app-modal-title">It's a <em>match</em></h2>
           <p class="cm-dialog-text">${escapeHtml(p.name)} is in for “${escapeHtml(b.title)}”. Your chat is open, so sort out the details there.</p>
           <div class="cm-match-slots">${slotDots(b, true)}<span>${Math.min(b.slotsFilled || 0, b.slots || 1)} of ${b.slots || 1} slots filled</span></div>
-          ${res.conflict_overridden ? '<p class="cm-dialog-note">Heads-up: they have another booking on these dates.</p>' : ''}
           ${filledNow ? `<p class="cm-dialog-note">That was the last slot${res.auto_rejected ? `: ${res.auto_rejected} other applicant${res.auto_rejected === 1 ? ' was' : 's were'} told the campaign is filled` : ''}.</p>` : ''}
           <div class="cm-dialog-actions">
             <button class="btn-gold" data-cm="chat" data-id="${escapeHtml(p.id)}"><i class="ph-bold ph-chat-circle-text"></i> Open chat</button>
@@ -662,7 +661,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
     else if (action === 'picked') openPicked(id);
     else if (action === 'pick') decide('SELECT');
     else if (action === 'pass') decide('REJECT');
-    else if (action === 'confirm-pick') { closeLayer(); decide('SELECT', true); }
+    else if (action === 'clash-pass') { closeLayer(); decide('REJECT'); }
     else if (action === 'close-layer') closeLayer();
     else if (action === 'chat') { closeLayer(); onOpenChat && onOpenChat(id); }
     else if (action === 'chats') onOpenChat && onOpenChat(null);

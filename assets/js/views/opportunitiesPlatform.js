@@ -88,7 +88,8 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
     const clashes = clashesFor(b);
     const left = slotsLeft(b);
     let action;
-    if (!app) action = `<button class="btn-gold" data-apply="${escapeHtml(b.id)}">Apply</button>`;
+    if (!app && clashes.length) action = '<span class="cm-pill is-no"><i class="ph-bold ph-calendar-x"></i> Date clash</span>';
+    else if (!app) action = `<button class="btn-gold" data-apply="${escapeHtml(b.id)}">Apply</button>`;
     else if (app.status === 'PENDING') action = '<span class="cm-pill is-wait"><i class="ph-bold ph-hourglass"></i> Applied</span>';
     else if (app.status === 'SELECTED') action = `<button class="btn-gold" data-chat="${escapeHtml(b.brandId)}"><i class="ph-bold ph-chat-circle-text"></i> Selected · Chat</button>`;
     else action = '<span class="cm-pill is-no">Not selected</span>';
@@ -114,7 +115,7 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
           ${talentBadge(b.talentType)}
           ${(b.tags || []).map(t => `<span class="cm-tag">${escapeHtml(t)}</span>`).join('')}
         </div>
-        ${clashes.length ? `<p class="cm-clash-hint"><i class="ph-fill ph-warning"></i>You're booked for “${escapeHtml(clashes[0].title)}” around these dates.</p>` : ''}
+        ${clashes.length && (!app || app.status === 'PENDING') ? `<p class="cm-clash-hint"><i class="ph-fill ph-warning"></i>You're booked for “${escapeHtml(clashes[0].title)}” on these dates, so you can't take this one.</p>` : ''}
         <footer class="cm-brief-foot">
           <div class="cm-fee"><b>${escapeHtml(b.budget)}</b><span>Fixed fee</span></div>
           ${action}
@@ -129,6 +130,10 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
     if (!b) return;
     applyingTo = briefId;
     const clashes = clashesFor(b);
+    if (clashes.length) {
+      toast(`You're booked for “${clashes[0].title}” on these dates, so you can't apply.`);
+      return;
+    }
     layer.innerHTML = `
       <div class="platform-modal-backdrop active cm-overlay">
         <div class="platform-modal-window cm-apply">
@@ -150,7 +155,6 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
           </div>
 
           <p class="cm-apply-fixed"><i class="ph-fill ph-lock-simple"></i>The fee is set by the brand and isn't negotiable. Apply only if it works for you.</p>
-          ${clashes.length ? `<p class="cm-clash-hint"><i class="ph-fill ph-warning"></i>You're already booked for “${escapeHtml(clashes[0].title)}” (${escapeHtml(formatWindow(clashes[0]))}). You can still apply.</p>` : ''}
 
           <form id="cmApplyForm" novalidate>
             <div class="cm-field">
@@ -171,16 +175,19 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
     btn.disabled = true;
     btn.textContent = 'Sending…';
     try {
-      const { alreadyApplied } = await store.applyToBrief(applyingTo, pitch);
+      const { alreadyApplied, clash } = await store.applyToBrief(applyingTo, pitch);
       layer.innerHTML = '';
       applyingTo = null;
-      toast(alreadyApplied ? "You've already applied to this one." : "Applied! You'll hear back when the brand decides.");
+      toast(clash ? `You're booked for “${clash.title}” on these dates, so you can't apply.`
+        : alreadyApplied ? "You've already applied to this one." : "Applied! You'll hear back when the brand decides.");
       render();
     } catch (err) {
       console.error('applyToBrief failed:', err);
       btn.disabled = false;
       btn.textContent = 'Send application';
-      toast("Couldn't send your application. Please try again.");
+      toast(err?.code === '42501'
+        ? "This campaign isn't taking your application: it may have closed, or its dates clash with a booking you have."
+        : "Couldn't send your application. Please try again.");
     }
   }
 

@@ -454,6 +454,9 @@ class StateStore {
   async applyToBrief(briefId, pitch = '') {
     const brief = this.getBrief(briefId);
     let alreadyApplied = false;
+    // No double-booking: talent can't apply for dates they're already booked.
+    const clash = brief && this.getScheduleConflicts(this.currentUser.id, brief)[0];
+    if (clash) return { clash };
 
     if (this.isRealAccount && !brief?.isDemo) {
       const { applyToBriefRemote } = await import('./briefsService.js');
@@ -484,14 +487,14 @@ class StateStore {
   // fills the slot, checks the talent's dates, opens the chat and, once the
   // last slot is filled, auto-rejects everyone still waiting. Resolves its
   // result: { status: SELECTED | REJECTED | CONFLICT | FULL | ALREADY_DECIDED }.
-  async decideApplicant(briefId, creatorId, decision, { confirmConflict = false } = {}) {
+  async decideApplicant(briefId, creatorId, decision) {
     const brief = this.getBrief(briefId);
     if (!brief) throw new Error('Campaign not found');
     let res;
 
     if (this.isRealAccount && !brief.isDemo) {
       const { decideApplicationRemote } = await import('./briefsService.js');
-      res = await decideApplicationRemote(briefId, creatorId, decision, confirmConflict);
+      res = await decideApplicationRemote(briefId, creatorId, decision, false);
       if (res?.conflicts) {
         res.conflicts = res.conflicts.map(c => ({
           title: c.title,
@@ -500,12 +503,10 @@ class StateStore {
       }
     } else {
       const clashes = decision === 'SELECT' ? this.getScheduleConflicts(creatorId, brief) : [];
-      if (clashes.length && !confirmConflict) {
-        res = { status: 'CONFLICT', conflicts: clashes.map(b => ({ title: b.title, window: formatWindow(b) })) };
-      } else {
-        res = this.decideLocally(briefId, creatorId, decision);
-        if (res.status === 'SELECTED' && clashes.length) res.conflict_overridden = true;
-      }
+      // Already booked on overlapping dates: they can't be selected.
+      res = clashes.length
+        ? { status: 'CONFLICT', conflicts: clashes.map(b => ({ title: b.title, window: formatWindow(b) })) }
+        : this.decideLocally(briefId, creatorId, decision);
     }
 
     this.applyDecision(briefId, creatorId, res);
@@ -560,6 +561,14 @@ class StateStore {
         if (a.briefId !== briefId) return a;
         if (a.creatorId === creatorId) return { ...a, status: 'SELECTED', decidedAt: now, matchId: res.match_id || a.matchId };
         return full && a.status === 'PENDING' ? { ...a, status: 'AUTO_REJECTED', decidedAt: now } : a;
+      });
+      // Booked for these dates now: their other pending applications that
+      // overlap are closed (decide_application does the same on the server).
+      const win = briefWindow(brief);
+      this.applications = this.applications.map(a => {
+        if (a.creatorId !== creatorId || a.briefId === briefId || a.status !== 'PENDING') return a;
+        const other = this.briefs.find(b => b.id === a.briefId) || a.brief;
+        return other && windowsOverlap(briefWindow(other), win) ? { ...a, status: 'AUTO_REJECTED', decidedAt: now } : a;
       });
       // The chat is open now: list it in the Deal Room even before the live
       // match subscription delivers it.

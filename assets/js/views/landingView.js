@@ -90,7 +90,7 @@ const FAQ = [
   ['How does it work?', 'A brand posts a campaign with a fixed fee, how many people it needs and the date. Talent of that kind nearby can apply with one tap. The brand swipes through the applicants, and every pick opens a private chat straight away. When all the slots are filled, everyone else is told the campaign is filled.'],
   ['Do I need to be in a particular city?', 'No. Ping works wherever you are. Set your location when you sign up and discovery is built around it.'],
   ['Can I negotiate the fee?', 'No. The brand sets one fixed fee per person and it is shown upfront, so everyone knows what a campaign pays before applying. Details like timing and deliverables are agreed in the chat.'],
-  ['How many campaigns can I apply to?', 'As many as you like. If you are picked for two campaigns on overlapping dates, the brand gets a heads-up before confirming, and you see it on the brief too.'],
+  ['How many campaigns can I apply to?', 'As many as you like. Ping never double-books you: once you are picked for a campaign, your other applications on the same dates close, and brands can’t pick you for dates you are already booked.'],
   ['How do payments work?', 'During the pilot you agree the scope and price in a Smart Proposal and settle payment directly with each other. In-app payments are on our roadmap.'],
   ['What is PingScore?', 'A trust signal on every profile, based on verification, how complete the profile is, and activity on Ping.']
 ];
