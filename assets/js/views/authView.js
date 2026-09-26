@@ -20,7 +20,7 @@ import { PingMap } from '../landing/pingMap.js';
 export const INTENDED_ROLE_KEY = 'ping_intended_role';
 
 const MAX_TAGS = 3;
-const MIN_PASSWORD = 6;
+const MIN_PASSWORD = 8;
 const RESEND_COOLDOWN = 30; // seconds
 
 const MARK = '<svg class="lp-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#E6FF1A"/><path d="M37 7 15 36h15l-4 21 23-31H34l3-19Z" fill="#0A0A0A"/></svg>';

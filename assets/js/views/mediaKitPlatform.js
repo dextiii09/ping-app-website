@@ -66,8 +66,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
   // reverting to pre-save values. `bindEvents()` below shares this same
   // variable via closure, so it always sees the latest value too.
   let user = store.currentUser;
+  const mountId = container.dataset.mount;
 
   function render() {
+    // An upload or save that finishes after the member has left the media
+    // kit must not redraw it over the screen they're on now.
+    if (container.dataset.mount !== mountId) return;
     user = store.currentUser;
     const isCreator = user.role === 'INFLUENCER';
     const isBusiness = user.role === 'BUSINESS';
@@ -190,7 +194,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
             <h3 style="font-family:var(--font-heading); font-size:19px; font-weight:700; color:#fff; margin-bottom:20px;">Profile Information</h3>
 
             <form id="formEditProfile" style="display:flex; flex-direction:column; gap:18px;">
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+              <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                 <div>
                   <label style="font-size:11.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Display Name</label>
                   <input type="text" id="inputProfName" value="${escapeHtml(user.name || '')}" required style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:11px 14px; color:#fff; font-size:14px;">
@@ -201,7 +205,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                 </div>
               </div>
 
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+              <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
                 <div>
                   <label style="font-size:11.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Location</label>
                   <div style="display:flex; gap:8px; margin-top:6px;">
@@ -241,7 +245,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                 <div style="border-top:1px solid var(--border-subtle); padding-top:18px;">
                   <div id="mkRateCard" ${talentType !== 'INFLUENCER' ? 'hidden' : ''}>
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin-bottom:12px;">Rate Card</div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                  <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                     <div>
                       <label style="font-size:11px; color:var(--text-muted);">Dedicated Reel</label>
                       <input type="text" id="inputRateReel" value="${escapeHtml(user.settings?.rateCard?.reel || '')}" placeholder="e.g. ₹8,000" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
@@ -258,7 +262,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                   </div>
 
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin:18px 0 12px;">Social Handles</div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div>
                       <label style="font-size:11px; color:var(--text-muted);">Instagram</label>
                       <input type="text" id="inputSocialInstagram" value="${escapeHtml(user.socials?.instagram || '')}" placeholder="@handle" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
@@ -271,7 +275,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
 
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin:18px 0 4px;">Audience</div>
                   <div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Self-reported. Shown on your card so brands can see your reach.</div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                  <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
                     <div>
                       <label style="font-size:11px; color:var(--text-muted);">Instagram followers</label>
                       <input type="text" id="inputStatIg" value="${escapeHtml(user.socialStats?.instagramFollowers && user.socialStats.instagramFollowers !== '0' ? user.socialStats.instagramFollowers : '')}" placeholder="e.g. 32K" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
@@ -296,7 +300,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
               ${isBusiness ? `
                 <div style="border-top:1px solid var(--border-subtle); padding-top:18px;">
                   <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:0.6px; margin-bottom:12px;">Business Details</div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                  <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <div>
                       <label style="font-size:11px; color:var(--text-muted);">Industry</label>
                       <select id="inputBizIndustry" style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px; outline:none; font-family:inherit;">
@@ -314,7 +318,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                       </select>
                     </div>
                   </div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+                  <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
                     <div>
                       <label style="font-size:11px; color:var(--text-muted);">Website / Instagram</label>
                       <input type="text" id="inputBizWebsite" value="${escapeHtml(user.website || '')}" placeholder="https://..." style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px; color:#fff; font-size:13.5px;">
@@ -368,12 +372,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
             </p>
 
             ${isCreator && talentType !== 'INFLUENCER' && highlights.length ? `
-              <div style="display:grid; grid-template-columns:repeat(${highlights.length}, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:12px;">
+              <div class="mk-print-stats" style="display:grid; grid-template-columns:repeat(${highlights.length}, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:12px;">
                 ${highlights.map(h => `<div style="text-align:center;"><div style="font-size:17px; font-weight:700; color:#fff;">${escapeHtml(h.value)}</div><div style="font-size:10.5px; color:var(--text-dim);">${escapeHtml(h.label)}</div></div>`).join('')}
               </div>
             ` : ''}
 
-            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:20px;">
+            <div class="mk-print-stats" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; background:rgba(0,0,0,0.5); padding:16px; border-radius:14px; margin-bottom:20px;">
               <div style="text-align:center;">
                 <div style="font-size:17px; font-weight:700; color:#fff;">${escapeHtml(showStat(user.socialStats?.instagramFollowers))}</div>
                 <div style="font-size:10.5px; color:var(--text-dim);">Instagram</div>

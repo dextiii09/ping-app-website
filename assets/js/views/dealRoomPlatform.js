@@ -10,6 +10,11 @@ import { displayPingScore } from '../pingScoreService.js';
 export function renderDealRoomPlatform(container, initialMatchId = null, onShowToast) {
   let matches = store.getMatchesForCurrentUser();
   let activeMatch = (initialMatchId ? matches.find(m => m.id === initialMatchId || m.users.includes(initialMatchId)) : null) || matches[0];
+  // Phones show either the conversation list or one open conversation (with
+  // a back button), never both. Opening a chat from elsewhere lands in it.
+  let mobileThread = !!initialMatchId;
+  const mountId = container.dataset.mount;
+  const setThreadOpen = (open) => document.body.classList.toggle('deal-thread-open', open);
   let icebreakers = [];
   let loadingIcebreakers = false;
   // Guards against refetching on every unrelated store.notify() (a swipe
@@ -73,12 +78,14 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
     }
 
     await ensureMessagesLoaded(activeMatch);
+    if (container.dataset.mount !== mountId) return; // the member has left the Deal Room
     // loadMessagesForMatch mutates the store's underlying match object -
     // refresh our local references so the loaded messages are visible here.
     matches = store.getMatchesForCurrentUser();
     if (activeMatch) activeMatch = matches.find(m => m.id === activeMatch.id) || activeMatch;
 
     if (!matches || matches.length === 0) {
+      setThreadOpen(false);
       container.innerHTML = `
         <div class="section-header">
           <div>
@@ -117,7 +124,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
         </div>
       </div>
 
-      <div class="deal-room-shell">
+      <div class="deal-room-shell${mobileThread && activeMatch ? ' is-thread' : ''}">
         <!-- Left Conversations Stream -->
         <div class="deal-conversations-pane">
           <div class="deal-conversations-head">
@@ -174,7 +181,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
               <input type="text" id="inputPropTitle" placeholder="e.g. Cold brew launch: 1 Reel + 3 Stories" required style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:11px 14px; color:#fff; font-size:14px;">
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="app-cols" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div>
                 <label style="font-size:11.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Budget (₹)</label>
                 <input type="text" id="inputPropPrice" placeholder="e.g. 6,500" required style="width:100%; margin-top:6px; background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:10px; padding:11px 14px; color:#fff; font-size:14px;">
@@ -198,6 +205,7 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
       </div>
     `;
 
+    setThreadOpen(mobileThread && !!activeMatch);
     bindEvents();
     fetchIcebreakers();
   }
@@ -209,11 +217,12 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
     return `
       <!-- Top Bar -->
       <div class="deal-room-top-bar">
-        <div style="display:flex; align-items:center; gap:14px;">
-          <div style="width:44px; height:44px; border-radius:999px; overflow:hidden; border:2px solid var(--gold);">
+        <div class="deal-top-who" style="display:flex; align-items:center; gap:14px;">
+          <button type="button" class="deal-back" id="btnDealBack" aria-label="Back to conversations"><i class="ph-bold ph-arrow-left"></i></button>
+          <div class="deal-top-avatar" style="width:44px; height:44px; border-radius:999px; overflow:hidden; border:2px solid var(--gold);">
             <img src="${escapeHtml(other.avatar)}" alt="${escapeHtml(other.name)}" style="width:100%; height:100%; object-fit:cover;">
           </div>
-          <div>
+          <div class="deal-top-names">
             <div style="font-size:16px; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px;">
               ${escapeHtml(other.name)}
               ${other.verified ? '<i class="ph-fill ph-seal-check verified-gold-tick" style="font-size:17px;"></i>' : ''}
@@ -222,9 +231,9 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
           </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button class="btn-gold" id="btnOpenProposalDrawer" style="padding:8px 16px; font-size:12.5px;">
-            <i class="ph-fill ph-file-text"></i> Smart Proposal
+        <div class="deal-top-actions" style="display:flex; align-items:center; gap:10px;">
+          <button class="btn-gold" id="btnOpenProposalDrawer" aria-label="Smart Proposal" title="Smart Proposal" style="padding:8px 16px; font-size:12.5px;">
+            <i class="ph-fill ph-file-text"></i><span class="deal-prop-label"> Smart Proposal</span>
           </button>
           <button class="header-icon-btn" id="btnBlockUser" data-user-id="${other.id || ''}" data-match-id="${match.id || ''}" title="Block & Report" style="color:var(--accent-crimson);">
             <i class="ph-fill ph-prohibit"></i>
@@ -356,9 +365,21 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
       row.onclick = async () => {
         const id = row.getAttribute('data-match-id');
         activeMatch = matches.find(m => m.id === id);
+        mobileThread = true;
         await render();
+        if (window.matchMedia('(max-width: 1024px)').matches) window.scrollTo({ top: 0 });
       };
     });
+
+    // Phones: back from a conversation to the list
+    const btnBack = container.querySelector('#btnDealBack');
+    if (btnBack) {
+      btnBack.onclick = async () => {
+        mobileThread = false;
+        await render();
+        window.scrollTo({ top: 0 });
+      };
+    }
 
     // Chat form submit
     const form = container.querySelector('#dealChatForm');
@@ -494,5 +515,6 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
   return () => {
     unsubscribeStore();
     store.stopMessageSubscription();
+    setThreadOpen(false);
   };
 }

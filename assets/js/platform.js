@@ -486,6 +486,11 @@ class PingPlatform {
 
     if (!this.viewportEl) return;
     this.viewportEl.innerHTML = '';
+    // A new id for every screen shown. A view whose background work (an
+    // upload, a save) finishes after the member has moved on checks this
+    // before redrawing, so it never paints over the screen they're on now.
+    this.mountSeq = (this.mountSeq || 0) + 1;
+    this.viewportEl.dataset.mount = String(this.mountSeq);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     switch (view) {

@@ -97,12 +97,10 @@ body {
 .platform-glow {
   position: fixed;
   top: -150px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1000px;
+  left: 0;
+  right: 0;
   height: 450px;
-  background: radial-gradient(circle, rgba(230, 255, 26, 0.09) 0%, rgba(157, 78, 221, 0.04) 45%, transparent 70%);
-  filter: blur(100px);
+  background: radial-gradient(ellipse 560px 260px at 50% 50%, rgba(230, 255, 26, 0.08) 0%, rgba(157, 78, 221, 0.035) 50%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }

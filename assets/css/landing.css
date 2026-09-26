@@ -1307,3 +1307,29 @@ html.lenis, html.lenis body { height: auto; }
 .auth-legal { margin-top: 14px; font-size: 12.5px; line-height: 1.5; text-align: center; color: var(--lp-dim); }
 .auth-legal a { color: var(--lp-muted); text-decoration: underline; text-underline-offset: 2px; }
 .auth-legal a:hover { color: var(--lp-lime); }
+
+/* ─── Phones & touch ─────────────────────────────────────────────────────── */
+/* Sign-up steps slide in sideways; don't let that widen the page. */
+.auth-shell { overflow-x: hidden; overflow-x: clip; }
+/* Step labels may shrink (three nowrap labels needed 313px on a 320px phone). */
+.auth-steps { grid-auto-columns: minmax(0, 1fr); }
+@media (max-width: 1024px) {
+  .auth-shell { grid-template-columns: minmax(0, 1fr); }
+}
+/* iOS zooms the whole page into any field whose text is under 16px. */
+@media (max-width: 768px), (pointer: coarse) {
+  .auth-input { font-size: 16px; }
+}
+/* Small text links get a larger, invisible tap area on touch screens. */
+@media (pointer: coarse) {
+  .lp-textlink, .auth-back, .auth-link-sm, .auth-switch a, .legal-back, .legal-foot a, .lp-footer-bottom a { position: relative; }
+  .lp-textlink::after, .auth-back::after, .auth-link-sm::after, .auth-switch a::after,
+  .legal-back::after, .legal-foot a::after, .lp-footer-bottom a::after { content: ""; position: absolute; inset: -10px -6px; }
+}
+@media (max-width: 720px) {
+  .lp-footer-cols > div { gap: 2px; }
+  .lp-footer-cols a, .lp-footer-cols button { min-height: 40px; }
+}
+@media (max-width: 380px) {
+  .auth-step-label { gap: 5px; font-size: 9.5px; letter-spacing: 0.03em; }
+}
