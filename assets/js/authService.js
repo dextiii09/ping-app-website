@@ -115,6 +115,15 @@ export async function updateUserProfile(uid, fields) {
   if (!data || data.length === 0) throw new Error('Profile not saved: your session may have expired. Please log in again.');
 }
 
+// Which of these public link names other members already hold. Profiles are
+// readable by every signed-in member; the unique index in media_kit.sql
+// still decides when a name is saved.
+export async function fetchTakenHandles(uid, handles) {
+  const { data, error } = await supabase.from('profiles').select('handle').in('handle', handles).neq('id', uid);
+  if (error) throw error;
+  return (data || []).map(r => r.handle);
+}
+
 // Profile photo: stored in the public `avatars` bucket, inside the member's
 // own folder (see supabase/extras.sql). Returns the public URL.
 export async function uploadAvatar(uid, blob) {

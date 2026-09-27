@@ -969,10 +969,22 @@ body:not(.pre-auth) .platform-glow { opacity: 0.5; }
 /* Public link */
 .mk-handle { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--border-medium); border-radius: 12px; background: rgba(255, 255, 255, 0.03); transition: border-color 0.3s, box-shadow 0.3s; }
 .mk-handle:focus-within { border-color: rgba(230, 255, 26, 0.7); box-shadow: 0 0 0 4px rgba(230, 255, 26, 0.1); }
-.mk-handle span { display: flex; align-items: center; padding-left: 14px; font-size: 14px; color: var(--text-dim); white-space: nowrap; }
+.mk-handle-pre { display: flex; align-items: center; padding-left: 14px; font-size: 14px; color: var(--text-dim); white-space: nowrap; }
 .platform-viewport #mkHandle { flex: 1; min-width: 0; padding-left: 1px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
 .mk-handle-hint { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--text-dim); overflow-wrap: anywhere; }
 .mk-handle-hint.is-err { color: #ff8fa3; }
+.mk-handle-hint.is-ok { color: var(--gold); }
+/* Free / taken / checking, inside the field */
+.mk-handle-state { display: none; }
+.mk-handle-state.ph-bold { flex: none; display: grid; place-items: center; width: 40px; font-size: 17px; color: var(--text-dim); }
+.mk-handle-state.is-ok { color: var(--gold); }
+.mk-handle-state.is-err { color: #ff8fa3; }
+.mk-handle:has(.mk-handle-state.is-err) { border-color: rgba(255, 143, 163, 0.55); }
+.mk-handle-suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.mk-handle-suggest[hidden] { display: none; }
+.mk-handle-suggest > span { font-size: 12px; color: var(--text-dim); }
+.mk-handle-chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border: 1px solid var(--border-medium); border-radius: 999px; background: transparent; font: inherit; font-size: 12.5px; font-weight: 500; color: var(--text-pure); cursor: pointer; transition: border-color 0.2s, color 0.2s; overflow-wrap: anywhere; }
+.mk-handle-chip:hover { border-color: var(--gold); color: var(--gold); }
 .mk-public-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .mk-public-actions .btn-glass { min-height: 38px; padding: 6px 14px; font-size: 13px; text-decoration: none; }
 
@@ -1183,6 +1195,8 @@ body.mk-dirty .ping-update { bottom: 92px; }
 }
 @media (max-width: 768px) {
   .mk-switch { min-height: 40px; }
+  .mk-handle-chip { min-height: 40px; }
+  .mk-photo-del { top: 4px; right: 4px; width: 40px; height: 40px; font-size: 15px; }
   .mk-head-actions { width: 100%; }
   .mk-head-actions > * { flex: 1; justify-content: center; }
   .mk-progress { padding: 16px; }
@@ -1218,6 +1232,10 @@ body.mk-dirty .ping-update { bottom: 92px; }
 @media (pointer: coarse) {
   .cm-brand-link { position: relative; }
   .cm-brand-link::after { content: ""; position: absolute; inset: -11px -8px; }
+}
+/* Narrow phones: just "@" in front of the link name (the hint spells out the link). */
+@media (max-width: 480px) {
+  .mk-handle-host { display: none; }
 }
 @media (max-width: 400px) {
   .mk-savebar-text { display: none; }

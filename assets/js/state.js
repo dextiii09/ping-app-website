@@ -692,6 +692,18 @@ class StateStore {
     return uploadWorkPhoto(this.currentUser.id, blob);
   }
 
+  // Public link names (media kit) from this list that another member already
+  // holds. Resolves a Set; the database's unique index has the final word.
+  async takenHandles(handles) {
+    const list = [...new Set(handles.map(h => String(h || '').toLowerCase()).filter(Boolean))];
+    if (!list.length) return new Set();
+    if (!this.isRealAccount) {
+      return new Set(this.users.filter(u => u.id !== this.currentUser.id && list.includes(u.handle)).map(u => u.handle));
+    }
+    const { fetchTakenHandles } = await import('./authService.js');
+    return new Set(await fetchTakenHandles(this.currentUser.id, list));
+  }
+
   // Best-effort clean-up of photo files that are no longer used.
   async removeWorkPhotos(urls) {
     if (!this.isRealAccount || !urls.length) return;

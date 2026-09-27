@@ -44,6 +44,21 @@ function handleProblem(h) {
   return '';
 }
 
+// Alternatives to a taken link name: with the member's city, their talent,
+// "the", or a number. Only valid names; which are free is checked after.
+function handleIdeas(h, u) {
+  const base = h.slice(0, 22).replace(/[._]+$/, '');
+  const city = String(u.location || '').split(',').pop().trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const talent = { INFLUENCER: 'creator', COMEDIAN: 'comedy', DJ: 'dj', BAND: 'music', ARTIST: 'art' }[talentTypeOf(u)] || '';
+  const ideas = [
+    city && `${base}.${city}`,
+    talent && `${base}.${talent}`,
+    `the.${base}`,
+    `${base}_${10 + Math.floor(Math.random() * 90)}`
+  ];
+  return [...new Set(ideas.filter(s => s && s !== h && !handleProblem(s)))];
+}
+
 export function renderMediaKitPlatform(container, onShowToast) {
   let user = store.currentUser;
   const mountId = container.dataset.mount;
@@ -265,8 +280,9 @@ export function renderMediaKitPlatform(container, onShowToast) {
                 </label>
               </div>
               <p class="mk-card-help">One link for your Instagram bio. Anyone can open it, no login needed. It shows your media kit and the days you're busy, never your email, rates or chats.</p>
-              <div class="mk-handle"><span>${escapeHtml(window.location.host)}/@</span><input type="text" id="mkHandle" value="${escapeHtml(handle)}" placeholder="yourname" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your link name"></div>
-              <p class="mk-handle-hint" id="mkHandleHint">3–30 letters, numbers, dots or underscores.</p>
+              <div class="mk-handle"><span class="mk-handle-pre"><span class="mk-handle-host">${escapeHtml(window.location.host)}/</span>@</span><input type="text" id="mkHandle" value="${escapeHtml(handle)}" placeholder="yourname" maxlength="60" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your link name" aria-describedby="mkHandleHint"><i class="mk-handle-state" id="mkHandleState" aria-hidden="true"></i></div>
+              <p class="mk-handle-hint" id="mkHandleHint" aria-live="polite">3–30 letters, numbers, dots or underscores.</p>
+              <div class="mk-handle-suggest" id="mkHandleSuggest" hidden></div>
               ${user.publicKit && handle ? `
                 <div class="mk-public-actions">
                   <a class="btn-glass" href="/@${escapeHtml(handle)}" target="_blank" rel="noopener"><i class="ph-bold ph-arrow-square-out"></i> View</a>
@@ -609,6 +625,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
     const saveBtn = q('#mkSave');
     if (saveBtn) saveBtn.textContent = 'Saving…';
     try {
+      // One person per link name: check first, so a taken name doesn't cost
+      // the rest of the changes (the unique index still has the final word).
+      if (fields.handle) {
+        const taken = await store.takenHandles([fields.handle]).catch(() => new Set());
+        if (taken.has(fields.handle)) throw Object.assign(new Error('That link name is taken.'), { code: '23505' });
+      }
       await store.updateCurrentUserProfile(fields);
       store.removeWorkPhotos([...removedSaved]);
       uploadedNow.clear();
@@ -622,7 +644,11 @@ export function renderMediaKitPlatform(container, onShowToast) {
       if (saveBtn) saveBtn.textContent = 'Save changes';
       if (err?.code === '23505' || /duplicate key/i.test(msg)) {
         onShowToast('That link name is taken. Try another.');
-        q('#mkHandle')?.focus();
+        const handleInput = q('#mkHandle');
+        if (handleInput) {
+          handleInput.dispatchEvent(new Event('input', { bubbles: true })); // shows "taken" + free ideas
+          handleInput.focus();
+        }
       } else if (err?.code === '23514' && /handle/i.test(msg)) {
         onShowToast("That link name isn't allowed. Try another.");
         q('#mkHandle')?.focus();
@@ -908,24 +934,67 @@ export function renderMediaKitPlatform(container, onShowToast) {
       setDirty(true);
     });
 
-    // Public link: the name is lowercase letters, numbers, dots, underscores.
+    // Public link: lowercase letters, numbers, dots and underscores, and one
+    // person per name. Each name is checked as it's typed (the database's
+    // unique index still decides on save), with free alternatives if taken.
     const handleInput = q('#mkHandle');
     const hint = q('#mkHandleHint');
+    const stateIcon = q('#mkHandleState');
+    const suggestBox = q('#mkHandleSuggest');
     const toggle = q('#mkPublicToggle');
+    let handleTimer = null;
+    let handleSeq = 0;
+    const showHandle = (text, kind = '', icon = '') => {
+      hint.textContent = text;
+      hint.className = `mk-handle-hint${kind ? ` is-${kind}` : ''}`;
+      stateIcon.className = `mk-handle-state${icon ? ` ph-bold ${icon}` : ''}${kind ? ` is-${kind}` : ''}`;
+    };
+    const showIdeas = (list) => {
+      suggestBox.hidden = !list.length;
+      suggestBox.innerHTML = list.length
+        ? `<span>Free:</span>${list.map(s => `<button type="button" class="mk-handle-chip" data-handle="${escapeHtml(s)}">@${escapeHtml(s)}</button>`).join('')}`
+        : '';
+    };
     const checkHandle = () => {
-      const problem = handleInput.value ? handleProblem(handleInput.value) : '';
-      hint.textContent = problem || (handleInput.value ? `Your link: ${window.location.host}/@${handleInput.value}` : '3–30 letters, numbers, dots or underscores.');
-      hint.classList.toggle('is-err', !!problem);
+      const h = handleInput.value;
+      const seq = ++handleSeq;
+      clearTimeout(handleTimer);
+      showIdeas([]);
+      if (!h) { showHandle('3–30 letters, numbers, dots or underscores.'); return; }
+      const problem = handleProblem(h);
+      if (problem) { showHandle(problem, 'err', 'ph-x-circle'); return; }
+      if (h === (user.handle || '')) { showHandle(`This is your link: ${window.location.host}/@${h}`, 'ok', 'ph-check-circle'); return; }
+      showHandle(`Checking if @${h} is free…`, '', 'ph-spinner ph-spin');
+      handleTimer = setTimeout(async () => {
+        try {
+          const taken = await store.takenHandles([h]);
+          if (seq !== handleSeq) return;
+          if (!taken.has(h)) { showHandle(`@${h} is free. Save to make it yours.`, 'ok', 'ph-check-circle'); return; }
+          showHandle(`@${h} is taken. Try another.`, 'err', 'ph-x-circle');
+          const ideas = handleIdeas(h, user);
+          const busy = await store.takenHandles(ideas);
+          if (seq === handleSeq) showIdeas(ideas.filter(s => !busy.has(s)).slice(0, 3));
+        } catch (err) {
+          if (seq === handleSeq && !hint.classList.contains('is-err')) showHandle("Couldn't check it right now. You can still save; you'll hear if it's taken.");
+        }
+      }, 350);
     };
     handleInput.addEventListener('input', () => {
-      const clean = handleInput.value.toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 30);
+      // Pasting a whole link or "@name" keeps just the name.
+      const clean = handleInput.value.replace(/^.*\/@/, '').toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 30);
       if (clean !== handleInput.value) handleInput.value = clean;
       checkHandle();
     });
+    suggestBox.addEventListener('click', (e) => {
+      const chip = e.target.closest('[data-handle]');
+      if (!chip) return;
+      handleInput.value = chip.getAttribute('data-handle');
+      handleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      handleInput.focus();
+    });
     toggle.addEventListener('change', () => {
       if (toggle.checked && !handleInput.value) {
-        hint.textContent = 'Choose your link name, then save.';
-        hint.classList.add('is-err');
+        showHandle('Choose your link name, then save.', 'err');
         handleInput.focus();
       } else {
         checkHandle();
