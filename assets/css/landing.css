@@ -338,6 +338,17 @@ html.lenis, html.lenis body { height: auto; }
 @keyframes lp-scroll { to { top: 100%; } }
 .lp-hero-hint { display: inline-flex; align-items: center; gap: 10px; }
 .lp-hint-dot { width: 7px; height: 7px; border-radius: 2px; background: var(--lp-lime); }
+/* Real streets (landing/realMap.js): where the map is, and its credit. */
+.lp-hero-where { display: inline-flex; align-items: center; gap: 24px; min-width: 0; }
+.lp-hero-place { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: var(--lp-ink); }
+.lp-hero-place[hidden] { display: none; }
+.lp-hero-place > i { flex: none; font-size: 14px; color: var(--lp-lime); }
+.lp-place-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-map-credit { position: absolute; right: var(--lp-gutter); bottom: 6px; z-index: 2; margin: 0; font-family: var(--lp-mono); font-size: 9.5px; letter-spacing: 0.04em; color: var(--lp-dim); }
+.lp-map-credit[hidden] { display: none; }
+.lp-map-credit a { color: inherit; text-decoration: none; }
+.lp-map-credit a:hover { color: var(--lp-ink); }
+.lp-tile-map .lp-map-credit { right: 12px; bottom: 8px; }
 
 /* ─── Marquee ─────────────────────────────────────────────────────────────── */
 .lp-marquee { position: relative; padding: clamp(44px, 6vw, 84px) 0; overflow: hidden; }
@@ -1335,6 +1346,17 @@ html.lenis, html.lenis body { height: auto; }
 }
 @media (max-width: 380px) {
   .auth-step-label { gap: 5px; font-size: 9.5px; letter-spacing: 0.03em; }
+}
+
+/* Phones: the place line takes the scroll cue's spot and may shrink. */
+@media (max-width: 720px) {
+  .lp-hero-foot:has(.lp-hero-place:not([hidden])) .lp-scroll-cue { display: none; }
+  .lp-hero-foot { letter-spacing: 0.06em; }
+  .lp-hero-where { max-width: 100%; }
+}
+@media (pointer: coarse) {
+  .lp-map-credit a { position: relative; }
+  .lp-map-credit a::after { content: ""; position: absolute; inset: -12px -4px; }
 }
 
 /* ─── Public media kit (pingapp.site/@handle, views/publicKitView.js) ────────── */

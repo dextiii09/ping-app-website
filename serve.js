@@ -44,6 +44,16 @@ const server = http.createServer((req, res) => {
   }
   if (kit) reqPath = '/index.html';
 
+  // Stand-in for the Vercel function api/geo.js (the visitor's rough area).
+  // PING_DEV_GEO="lat,lon,City" picks another place; "none" = unknown.
+  if (reqPath === '/api/geo') {
+    const [lat, lon, city] = (process.env.PING_DEV_GEO || '30.7398,76.7827,Chandigarh').split(',');
+    const known = process.env.PING_DEV_GEO !== 'none';
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...(PROD ? PROD_HEADERS : {}) });
+    res.end(JSON.stringify(known ? { lat: Number(lat), lon: Number(lon), city } : {}));
+    return;
+  }
+
   const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
   let filePath = path.join(__dirname, safePath);
   if (PROD && !path.extname(filePath) && fs.existsSync(filePath + '.html')) filePath += '.html';

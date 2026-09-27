@@ -15,6 +15,9 @@ import { RouteLine } from '../landing/routeLine.js';
 
 const CONTACT_EMAIL = 'letstalk@reachupmedia.in';
 const INTRO_SEEN_KEY = 'ping_intro_seen';
+// Shown whenever a map uses real streets (landing/realMap.js). The pings on
+// it stay an illustration, and OpenStreetMap's data needs this credit.
+const MAP_CREDIT = 'Demo pings · Map <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> <a href="https://openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a>';
 
 const MARK = '<svg class="lp-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="#E6FF1A"/><path d="M37 7 15 36h15l-4 21 23-31H34l3-19Z" fill="#0A0A0A"/></svg>';
 const ARROW = '<svg class="lp-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -168,8 +171,12 @@ function markup({ skipIntro, touch }) {
         </div>
         <div class="lp-container lp-hero-foot">
           <span class="lp-scroll-cue"><span class="lp-scroll-line"></span>Scroll</span>
-          <span class="lp-hero-hint"><span class="lp-hint-dot"></span>${touch ? 'Tap' : 'Click'} the map to send a ping</span>
+          <span class="lp-hero-where">
+            <span class="lp-hero-place" hidden><i class="ph-fill ph-map-pin" aria-hidden="true"></i><span class="lp-place-text" aria-live="polite"></span></span>
+            <span class="lp-hero-hint"><span class="lp-hint-dot"></span>${touch ? 'Tap' : 'Click'} the map to send a ping</span>
+          </span>
         </div>
+        <p class="lp-map-credit" hidden>${MAP_CREDIT}</p>
       </section>
 
       <!-- MARQUEE -->
@@ -325,9 +332,10 @@ function markup({ skipIntro, touch }) {
               <div class="lp-tile-copy"><h3>Reach talent around you</h3><p>Your campaign goes to the creators, comedians, DJs and bands nearby: the people your customers already follow.</p></div>
               <div class="lp-tile-visual lp-tile-map">
                 <canvas class="lp-mini-map" aria-hidden="true"></canvas>
-                <span class="map-chip" style="--x:8%;--y:14%"><span ${bg(PHOTOS.meera)}></span>@meera.styles</span>
-                <span class="map-chip" style="--x:46%;--y:64%"><span ${bg(PHOTOS.simran)}></span>@simran.eats</span>
-                <span class="map-chip" style="--x:18%;--y:80%"><span ${bg(PHOTOS.arjun)}></span>@arjun.lifts</span>
+                <span class="map-chip" style="--x:8%;--y:14%" data-real="Style creator"><span ${bg(PHOTOS.meera)}></span>@meera.styles</span>
+                <span class="map-chip" style="--x:46%;--y:64%" data-real="Food creator"><span ${bg(PHOTOS.simran)}></span>@simran.eats</span>
+                <span class="map-chip" style="--x:18%;--y:80%" data-real="Fitness creator"><span ${bg(PHOTOS.arjun)}></span>@arjun.lifts</span>
+                <p class="lp-map-credit" hidden>${MAP_CREDIT}</p>
               </div>
             </article>
             <article class="lp-tile lp-tile-b">
@@ -648,6 +656,44 @@ export function renderLanding(container, { onChooseRole, onLogin, skipIntro = fa
   if (scrollTo) heroMap.skipBuild();
   else if (noIntro) heroMap.playBuild();
 
+  // Real streets around the visitor (landing/realMap.js), loaded once the
+  // page is idle: their rough area first (no prompt), then their exact spot
+  // if the browser shares it (it asks them; asked once per tab). Until then,
+  // and whenever something fails, the map stays as it is.
+  const placeEl = root.querySelector('.lp-hero-place');
+  const placeText = placeEl.querySelector('.lp-place-text');
+  let mapArea = null;
+  const useArea = async (p) => {
+    const { loadArea, savePlace } = await import('../landing/realMap.js');
+    const area = await loadArea(p.lat, p.lon, heroMap.extentMetres());
+    if (destroyed || !area) return false;
+    if (p.exact) savePlace(p); // this tab won't ask again
+    mapArea = area;
+    heroMap.useGeo(area, { homeLabel: p.exact ? "You're here" : 'Your area' });
+    if (miniMap) miniMap.useGeo(area);
+    root.querySelectorAll('.lp-map-credit').forEach((el) => { el.hidden = false; });
+    // Sample creators on a real map get a kind of creator, not a made-up handle.
+    root.querySelectorAll('.map-chip[data-real]').forEach((chip) => { chip.lastChild.nodeValue = chip.getAttribute('data-real'); });
+    const where = p.exact ? area.name : (p.city || area.name);
+    placeText.textContent = where ? `${p.exact ? 'Near' : 'Around'} ${where}` : (p.exact ? 'Near you' : 'Your area');
+    placeEl.hidden = false;
+    return true;
+  };
+  const whenIdle = window.requestIdleCallback ? (fn) => window.requestIdleCallback(fn, { timeout: 2500 }) : (fn) => setTimeout(fn, 1200);
+  whenIdle(async () => {
+    if (destroyed) return;
+    const realMap = await import('../landing/realMap.js');
+    if (destroyed || !realMap.realMapAllowed()) return;
+    const saved = realMap.savedPlace();
+    if (saved) { await useArea(saved); return; }
+    const rough = await realMap.approxPlace();
+    if (destroyed) return;
+    if (rough) await useArea(rough);
+    if (destroyed || realMap.askedExact()) return;
+    const exact = await realMap.exactPlace();
+    if (exact && !destroyed) await useArea(exact);
+  });
+
   // Travelling ping line (desktop only).
   if (!reduced) {
     const choosePanels = root.querySelector('.lp-choose-panels');
@@ -766,7 +812,8 @@ export function renderLanding(container, { onChooseRole, onLogin, skipIntro = fa
     const panel = panels.find((p) => !p.hidden);
     if (name === 'brands' && !miniMap) {
       miniMap = new PingMap(panel.querySelector('.lp-mini-map'), {
-        density: 1.6, focus: [0.62, 0.42], narrowFocus: [0.62, 0.42], avoidLeft: 0, homeLabel: 'Your store', nameLabels: false
+        density: 1.6, focus: [0.62, 0.42], narrowFocus: [0.62, 0.42], avoidLeft: 0, homeLabel: 'Your store', nameLabels: false,
+        geo: mapArea, metresPerPx: 1.1
       });
       cleanups.push(() => miniMap.destroy());
     }

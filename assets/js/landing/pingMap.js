@@ -6,6 +6,8 @@
 // With buildIn, the city starts empty and playBuild() "builds" it: streets
 // reveal outward from the home point and places pop in as the edge passes.
 // Purely illustrative - the names are fictional and nothing here is live data.
+// With real streets (useGeo, see realMap.js) the map shows the visitor's own
+// area; the pings stay an illustration, so no made-up names or counts then.
 
 const BUSINESSES = [
   'Brew Lab', 'Glow Salon', 'Iron Den Gym', 'Thread & Co.', 'Crumb & Crust', 'Petal House',
@@ -76,8 +78,11 @@ export class PingMap {
       nameLabels: true,          // false = only the "Match · niche" badge, no node names
       avoid: null,               // () => [{x, y, w, h}] areas (canvas px) to keep nodes out of, e.g. text
       buildIn: false,            // start empty and wait for playBuild() / skipBuild()
+      geo: null,                 // real streets from realMap.loadArea() instead of the invented city
+      metresPerPx: 0,            // real-streets scale (0 = default for the canvas size)
       ...options
     };
+    this.geo = this.o.geo || null;
     this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.nodes = [];
     this.links = [];
@@ -100,7 +105,7 @@ export class PingMap {
     let resizeTimer = 0;
     this.handleResize = () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (!this.destroyed) this.build(); }, 160);
+      resizeTimer = setTimeout(() => { if (!this.destroyed) { this.fadeFrom = null; this.build(); } }, 160);
     };
     this.handleVisibility = () => { this.pageVisible = !document.hidden; this.toggleLoop(); };
 
@@ -141,7 +146,7 @@ export class PingMap {
       Math.hypot(this.hx, this.H - this.hy), Math.hypot(this.W - this.hx, this.H - this.hy)
     ) + 80;
 
-    this.buildStreets();
+    if (this.geo) this.buildRealStreets(); else this.buildStreets();
     this.buildNodes();
     this.links = [];
     this.rings = [];
@@ -280,6 +285,92 @@ export class PingMap {
     g.restore();
   }
 
+  // Metres per screen pixel for real streets: roughly the invented city's
+  // street spacing in an ordinary neighbourhood.
+  mpp() {
+    return this.o.metresPerPx || (this.narrow ? 1.3 : 1.25);
+  }
+
+  // How far the map reaches from home, in metres (for realMap.loadArea).
+  extentMetres() {
+    const m = this.mpp();
+    const extra = this.pad + 40; // parallax drift + a margin
+    return {
+      left: (this.hx + extra) * m,
+      right: (this.W - this.hx + extra) * m,
+      up: (this.hy + extra) * m,
+      down: (this.H - this.hy + extra) * m
+    };
+  }
+
+  // Real streets (landing/realMap.js, in metres around home), drawn in the
+  // invented city's style. Each tile is clipped to its own square, so shapes
+  // repeated in a neighbouring tile's margin aren't painted twice. A fresh
+  // canvas each time: a cross-fade may still be showing the previous one.
+  buildRealStreets() {
+    const pad = (this.pad = 48);
+    const w = this.W + pad * 2;
+    const h = this.H + pad * 2;
+    const off = (this.streets = document.createElement('canvas'));
+    off.width = Math.round(w * this.dpr);
+    off.height = Math.round(h * this.dpr);
+    const g = off.getContext('2d');
+    const m = this.mpp();
+    g.setTransform(this.dpr / m, 0, 0, this.dpr / m, (this.hx + pad) * this.dpr, (this.hy + pad) * this.dpr);
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    const px = (v) => v * m; // widths are given in screen pixels
+    const eachTile = (fn) => this.geo.tiles.forEach((t) => {
+      g.save();
+      g.beginPath();
+      g.rect(t.rect[0], t.rect[1], t.rect[2], t.rect[3]);
+      g.clip();
+      fn(t);
+      g.restore();
+    });
+
+    eachTile((t) => {
+      g.fillStyle = 'rgba(230,255,26,0.034)';
+      g.fill(t.green, 'evenodd');
+      g.fillStyle = 'rgba(255,255,255,0.034)';
+      g.fill(t.buildings, 'evenodd');
+    });
+    eachTile((t) => {
+      g.fillStyle = '#0b0c0c';
+      g.fill(t.water, 'evenodd');
+      g.strokeStyle = 'rgba(255,255,255,0.08)';
+      g.lineWidth = px(1);
+      g.stroke(t.water);
+      for (const [wpx, path] of Object.entries(t.waterways)) {
+        g.strokeStyle = 'rgba(255,255,255,0.08)';
+        g.lineWidth = px(Number(wpx) + 2);
+        g.stroke(path);
+        g.strokeStyle = '#0b0c0c';
+        g.lineWidth = px(Number(wpx));
+        g.stroke(path);
+      }
+    });
+    const ROAD_STYLE = [['path', 0.6, 0.03], ['service', 0.7, 0.045], ['minor', 1, 0.065], ['mid', 1.6, 0.095], ['major', 2.4, 0.115]];
+    eachTile((t) => {
+      for (const [kind, wpx, alpha] of ROAD_STYLE) {
+        g.strokeStyle = `rgba(255,255,255,${alpha})`;
+        g.lineWidth = px(wpx);
+        g.stroke(t.roads[kind]);
+      }
+    });
+  }
+
+  // Switch to real streets. Before the build-in has played, the build reveals
+  // them; once the invented city is on screen, the real one cross-fades in.
+  useGeo(area, { homeLabel } = {}) {
+    if (this.destroyed || !area) return;
+    if (homeLabel) this.o.homeLabel = homeLabel;
+    this.fadeFrom = !this.building && !this.reduced && this.streets ? this.streets : null;
+    this.fadeStart = performance.now();
+    this.geo = area;
+    this.build();
+  }
+
   avoidRects() {
     try { return (this.o.avoid && this.o.avoid()) || []; } catch (e) { return []; }
   }
@@ -303,12 +394,61 @@ export class PingMap {
     return false;
   }
 
-  buildNodes() {
-    const { W, H, pad } = this;
-    const count = clamp(Math.round((W * H) / 21000 * this.o.density), 12, 64);
+  // Random spots along the invented city's streets (view coordinates).
+  gridSpots() {
     const { xs, ys, cx, cy } = this.grid;
     const c = Math.cos(this.angle);
     const s = Math.sin(this.angle);
+    return () => {
+      const vertical = Math.random() < 0.5;
+      const px = vertical ? pick(xs) : rand(xs[0], xs[xs.length - 1]);
+      const py = vertical ? rand(ys[0], ys[ys.length - 1]) : pick(ys);
+      return [cx + px * c - py * s - this.pad, cy + px * s + py * c - this.pad];
+    };
+  }
+
+  // Random spots on the real roads in view, weighted by length (or anywhere
+  // in view when there are hardly any roads, e.g. over open water).
+  roadSpots() {
+    const { W, H, hx, hy } = this;
+    const m = this.mpp();
+    const segs = this.geo.segs;
+    const kept = [];
+    const cum = [];
+    let total = 0;
+    for (let i = 0; i < segs.length; i += 4) {
+      const x1 = hx + segs[i] / m;
+      const y1 = hy + segs[i + 1] / m;
+      const x2 = hx + segs[i + 2] / m;
+      const y2 = hy + segs[i + 3] / m;
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      if (mx < 0 || mx > W || my < 0 || my > H) continue;
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      if (len < 0.5) continue;
+      kept.push(x1, y1, x2, y2);
+      total += len;
+      cum.push(total);
+    }
+    if (total < Math.min(W, H)) return () => [rand(0, W), rand(0, H)];
+    return () => {
+      const r = Math.random() * total;
+      let lo = 0;
+      let hi = cum.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (cum[mid] < r) lo = mid + 1; else hi = mid;
+      }
+      const j = lo * 4;
+      const t = Math.random();
+      return [kept[j] + (kept[j + 2] - kept[j]) * t, kept[j + 1] + (kept[j + 3] - kept[j + 1]) * t];
+    };
+  }
+
+  buildNodes() {
+    const { W, H, pad } = this;
+    const count = clamp(Math.round((W * H) / 21000 * this.o.density), 12, 64);
+    const spot = this.geo ? this.roadSpots() : this.gridSpots();
     const bizNames = shuffle(BUSINESSES.slice());
     const creatorNames = shuffle(CREATORS.slice());
     let bi = 0;
@@ -317,21 +457,19 @@ export class PingMap {
     const avoid = this.avoidRects();
     let guard = 0;
     while (nodes.length < count && guard++ < count * 60) {
-      const vertical = Math.random() < 0.5;
-      const px = vertical ? pick(xs) : rand(xs[0], xs[xs.length - 1]);
-      const py = vertical ? rand(ys[0], ys[ys.length - 1]) : pick(ys);
-      const x = cx + px * c - py * s - pad;
-      const y = cy + px * s + py * c - pad;
+      const [x, y] = spot();
       if (x < 20 || x > W - 20 || y < 20 || y > H - 20) continue;
       if (!this.narrow && x < W * this.o.avoidLeft && Math.random() < 0.82) continue;
-      if (this.inRiver(x + pad, y + pad)) continue;
+      if (!this.geo && this.inRiver(x + pad, y + pad)) continue;
       if (this.inRects(avoid, x, y)) continue;
       if (nodes.some((n) => Math.hypot(n.x - x, n.y - y) < 28)) continue;
       if (Math.hypot(x - this.hx, y - this.hy) < 30) continue;
       const biz = Math.random() < 0.45;
       nodes.push({
         x, y, biz,
-        label: biz ? bizNames[bi++ % bizNames.length] : creatorNames[ci++ % creatorNames.length],
+        // On a real map the dots stay anonymous: no made-up names on real streets.
+        label: this.geo ? (biz ? 'Local business' : 'Local creator')
+          : biz ? bizNames[bi++ % bizNames.length] : creatorNames[ci++ % creatorNames.length],
         niche: pick(NICHES),
         lit: 0,
         hover: 0,
@@ -392,9 +530,11 @@ export class PingMap {
     });
     const creators = hits.filter((n) => !n.biz).length;
     const biz = hits.length - creators;
-    const text = hits.length
-      ? `${creators} creator${creators === 1 ? '' : 's'} · ${biz} business${biz === 1 ? '' : 'es'} nearby`
-      : 'Quiet corner. Try another spot';
+    // Counting the invented dots would be a made-up claim about a real place.
+    const text = this.geo ? 'Ping sent'
+      : hits.length
+        ? `${creators} creator${creators === 1 ? '' : 's'} · ${biz} business${biz === 1 ? '' : 'es'} nearby`
+        : 'Quiet corner. Try another spot';
     this.toasts.push({ x: mx, y: my - 18, text, t0: now, life: 2300, lime: true });
     if (this.reduced) this.draw(now);
   }
@@ -550,8 +690,17 @@ export class PingMap {
     const reveal = this.revealRadius(now);
     const ox = this.par.x * NODE_DEPTH;
     const oy = this.par.y * NODE_DEPTH;
+    // Real streets arriving over the invented city cross-fade in (useGeo).
+    const swap = this.fadeFrom ? easeInOut(clamp((now - this.fadeStart) / 1100, 0, 1)) : 1;
+    if (swap >= 1) this.fadeFrom = null;
     if (reveal === Infinity) {
+      if (this.fadeFrom) {
+        ctx.globalAlpha = 1 - swap;
+        ctx.drawImage(this.fadeFrom, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
+        ctx.globalAlpha = swap;
+      }
       ctx.drawImage(this.streets, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
+      ctx.globalAlpha = 1;
     } else if (reveal > 0) {
       ctx.save();
       ctx.beginPath();
@@ -686,7 +835,8 @@ export class PingMap {
       ctx.stroke();
     }
 
-    // Nodes (pop in as the build-in front passes them).
+    // Nodes (pop in as the build-in front passes them; fade in with new streets).
+    ctx.globalAlpha = swap;
     for (const n of this.nodes) {
       let scale = 1;
       if (reveal !== Infinity) {
@@ -717,6 +867,7 @@ export class PingMap {
         ctx.fill();
       }
     }
+    ctx.globalAlpha = 1;
 
     // Pointer: faint lock-on lines + labels for the closest few.
     if (this.pointer.inside) {
@@ -736,12 +887,13 @@ export class PingMap {
       for (const n of near) if (n.hover > 0.5) this.label(n.x, n.y, n.label, { lime: n.biz, alpha: n.hover });
     }
 
-    // Labels for matching pairs + the match toast.
+    // Labels for matching pairs + the match toast (names only on the invented city).
+    const names = this.o.nameLabels && !this.geo;
     for (const l of this.links) {
       const age = now - l.t0;
       const alpha = l.still ? 0.9 : clamp((4600 - age) / 900, 0, 1) * clamp(age / 300, 0, 1);
-      if (this.o.nameLabels && l.a.hover < 0.5) this.label(l.a.x, l.a.y, l.a.label, { alpha });
-      if (this.o.nameLabels && l.matched && l.b.hover < 0.5) this.label(l.b.x, l.b.y, l.b.label, { lime: true, alpha });
+      if (names && l.a.hover < 0.5) this.label(l.a.x, l.a.y, l.a.label, { alpha });
+      if (names && l.matched && l.b.hover < 0.5) this.label(l.b.x, l.b.y, l.b.label, { lime: true, alpha });
       if (l.matched) {
         const top = this.curvePoint(l, 0.5);
         const pop = l.still ? 1 : easeOut(clamp((age - 1000) / 350, 0, 1));
