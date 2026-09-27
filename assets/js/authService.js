@@ -125,6 +125,15 @@ export async function uploadAvatar(uid, blob) {
   return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
 }
 
+// A photo of past work, in the member's own folder of the same bucket.
+export async function uploadWorkPhoto(uid, blob) {
+  const path = `${uid}/work-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const { error } = await supabase.storage.from('avatars')
+    .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+}
+
 // Best-effort clean-up of a replaced photo (only ever inside the member's own
 // folder of the avatars bucket).
 export async function removeAvatarFile(uid, url) {

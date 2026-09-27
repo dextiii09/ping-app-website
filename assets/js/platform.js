@@ -291,6 +291,10 @@ class PingPlatform {
     const btnLogout = this.headerEl.querySelector('#btnLogoutAccount');
     if (btnLogout) {
       btnLogout.onclick = async () => {
+        // Unsaved media kit changes: ask first, then let the page go quietly.
+        const canLeave = this.currentViewCleanup && this.currentViewCleanup.canLeave;
+        if (canLeave && !canLeave()) return;
+        if (this.currentViewCleanup) { this.currentViewCleanup(); this.currentViewCleanup = null; }
         const { logOut } = await import('./authService.js');
         await logOut();
         localStorage.removeItem('ping_platform_state_v1');
@@ -473,6 +477,9 @@ class PingPlatform {
   }
 
   switchView(view, payload = null) {
+    // A screen with unsaved changes (the media kit) may ask to stay.
+    const canLeave = this.currentViewCleanup && this.currentViewCleanup.canLeave;
+    if (canLeave && !canLeave()) return;
     if (this.currentViewCleanup) {
       this.currentViewCleanup();
       this.currentViewCleanup = null;
@@ -531,7 +538,7 @@ class PingPlatform {
       case 'applications':
         this.currentViewCleanup = renderApplicationsPlatform(this.viewportEl, {
           onOpenChat: (id) => this.switchView('dealroom', id),
-          onNavigate: (v) => this.switchView(v)
+          onNavigate: (v, payload) => this.switchView(v, payload)
         });
         break;
 
@@ -541,7 +548,7 @@ class PingPlatform {
         break;
 
       case 'mediakit':
-        renderMediaKitPlatform(this.viewportEl, (msg) => this.showToast(msg));
+        this.currentViewCleanup = renderMediaKitPlatform(this.viewportEl, (msg) => this.showToast(msg));
         break;
 
       case 'ops':

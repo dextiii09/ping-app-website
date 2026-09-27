@@ -5,13 +5,16 @@
 // is filled, everyone still waiting is told the campaign is filled (see
 // decide_application() in supabase/campaign_matching.sql).
 import { store } from '../state.js';
+import { applicantCardHtml } from './profileCards.js';
+import { bindEmbeds } from '../embeds.js';
+import { clashWith } from '../availability.js';
 import { escapeHtml } from '../domUtils.js';
 import { NICHE_TAGS } from '../mockData.js';
 import { detectLocation } from '../geoService.js';
-import { TALENT_TYPES, talentMeta, talentTypeOf, talentHighlights, talentLinks, portfolioOf, talentBadge } from '../talentTypes.js';
+import { TALENT_TYPES, talentMeta, talentTypeOf, talentBadge } from '../talentTypes.js';
 import {
   campaignStatus, STATUS_LABEL, formatWindow, feeAmount, formatINR, slotsLeft,
-  timeAgo, toDateInput, greeting, greetName
+  toDateInput, greeting, greetName
 } from '../campaignUtils.js';
 
 export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, focusBriefId = null } = {}) {
@@ -21,10 +24,13 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
   let passArmed = null;  // creator id whose Pass is waiting for its second tap
   let passTimer = null;
   let conflictFor = null; // creator id shown in the scheduling-clash dialog
+  let busyMap = {};       // creator id -> busy windows (booked / unavailable days)
+  let busyKey = null;     // which campaign + applicants busyMap was loaded for
 
   container.innerHTML = '<div class="cm-main"></div><div class="cm-layer"></div>';
   const main = container.querySelector('.cm-main');
   const layer = container.querySelector('.cm-layer');
+  bindEmbeds(main);
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -203,6 +209,7 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
         </div>
       </div>
     `;
+    loadBusy();
   }
 
   function deckDone(b, st, c) {
@@ -237,43 +244,25 @@ export function renderCampaignsPlatform(container, { onShowToast, onOpenChat, fo
       </div>`;
   }
 
-  // One applicant in the review list: who they are, their numbers and pitch,
-  // and the two decisions.
+  // One applicant in the review list (the same card creators preview in their
+  // media kit), with a warning when they're busy on this campaign's dates.
   function applicantRow(a) {
-    const p = a.profile;
-    const type = talentTypeOf(p) || 'INFLUENCER';
-    const stats = talentHighlights(p);
-    const work = portfolioOf(p).filter(w => w.image).slice(0, 3);
-    const links = talentLinks(p).slice(0, 4);
-    const armed = passArmed === p.id;
-    const name = escapeHtml(p.name);
-    return `
-      <li class="cm-applicant" data-creator="${escapeHtml(p.id)}">
-        <div class="cm-applicant-head">
-          <img class="cm-applicant-av" src="${escapeHtml(p.avatar)}" alt="">
-          <div class="cm-applicant-id">
-            <h3>${name}${p.verified ? ' <i class="ph-fill ph-seal-check" title="Verified by Ping"></i>' : ''}</h3>
-            <div class="cm-applicant-meta">
-              ${talentBadge(type)}
-              <span><i class="ph-fill ph-map-pin"></i> ${escapeHtml(p.location || 'Location not set')}</span>
-              <span class="cm-applicant-when">Applied ${escapeHtml(timeAgo(a.createdAt))}</span>
-              ${p.isDemo ? '<span class="cm-demo">Demo</span>' : ''}
-            </div>
-          </div>
-        </div>
-        ${stats.length ? `<div class="cm-app-stats">${stats.map(st => `<div><b>${escapeHtml(st.value)}</b><span>${escapeHtml(st.label)}</span></div>`).join('')}</div>` : ''}
-        <div class="cm-app-pitch${a.pitch ? '' : ' is-empty'}">
-          <span>Pitch note</span>
-          <p>${a.pitch ? escapeHtml(a.pitch) : 'No note. They applied with their profile.'}</p>
-        </div>
-        ${work.length ? `<div class="cm-app-work">${work.map(w => `<a href="${escapeHtml(w.url)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(w.url)}" alt="Past work"></a>`).join('')}</div>` : ''}
-        ${links.length ? `<div class="cm-app-links">${links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-up-right"></i>${escapeHtml(l.label)}</a>`).join('')}</div>` : ''}
-        ${!work.length && !links.length && p.bio ? `<p class="cm-app-bio">${escapeHtml(p.bio)}</p>` : ''}
-        <div class="cm-applicant-actions">
-          <button type="button" class="btn-glass cm-pass${armed ? ' is-armed' : ''}" data-cm="pass" data-id="${escapeHtml(p.id)}" aria-label="${armed ? `Tap again to pass on ${name}` : `Pass on ${name}`}">${armed ? 'Tap again to pass' : 'Pass'}</button>
-          <button type="button" class="btn-gold cm-connect" data-cm="connect" data-id="${escapeHtml(p.id)}" aria-label="Connect with ${name}"><i class="ph-bold ph-user-plus"></i> Connect</button>
-        </div>
-      </li>`;
+    const brief = store.getBrief(reviewId);
+    const busy = brief ? clashWith(busyMap[a.creatorId], brief) : null;
+    return applicantCardHtml(a.profile, { pitch: a.pitch, createdAt: a.createdAt, armed: passArmed === a.profile.id, busy });
+  }
+
+  // Loads free/busy once per campaign + applicant list, then redraws.
+  function loadBusy() {
+    const ids = pendingApplicants().map(a => a.creatorId);
+    const key = `${reviewId}:${ids.join(',')}`;
+    if (!ids.length || key === busyKey) return;
+    busyKey = key;
+    store.getBusyWindows(ids).then((map) => {
+      if (busyKey !== key) return;
+      busyMap = map || {};
+      if (mode === 'review' && !busy) render();
+    });
   }
 
   function pickedRow(a) {

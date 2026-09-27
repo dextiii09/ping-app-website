@@ -29,11 +29,12 @@ async function fetchVersion() {
 }
 
 // Something the member would lose on a reload: typing, an open form or
-// dialog, a photo upload, or a sign-up / log-in in progress.
+// dialog, unsaved media kit changes, a photo upload, or a sign-up / log-in
+// in progress.
 export function isBusy() {
   const active = document.activeElement;
   if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return true;
-  if (document.querySelector('.platform-modal-backdrop.active, .cm-layer .platform-modal-backdrop, .lp-menu.is-open, .mk-avatar.is-busy')) return true;
+  if (document.querySelector('.platform-modal-backdrop.active, .cm-layer .platform-modal-backdrop, .lp-menu.is-open, .mk-avatar.is-busy, .mk-savebar.is-on, .mk-photo.is-loading')) return true;
   if (document.querySelector('.auth-steps[aria-valuenow]:not([aria-valuenow="1"])')) return true;
   const fields = document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea');
   for (const el of fields) {

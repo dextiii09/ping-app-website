@@ -95,6 +95,7 @@ export function talentHighlights(user) {
     const out = [];
     const followers = has(s.instagramFollowers) ? s.instagramFollowers : demo.followers;
     if (has(followers)) out.push({ label: 'Instagram', value: followers });
+    if (has(s.avgReelViews)) out.push({ label: 'Reel views', value: s.avgReelViews });
     const eng = has(s.avgEngagement) ? s.avgEngagement : demo.engagement;
     if (has(eng)) out.push({ label: 'Engagement', value: eng });
     if (has(s.youtubeSubscribers)) out.push({ label: 'YouTube', value: s.youtubeSubscribers });
@@ -114,15 +115,17 @@ export function talentLinks(user) {
 }
 
 // Past work, normalised. Demo profiles carry plain image URLs; real ones
-// store [{label, url}].
+// store [{label, url}] links and [{label, url, photo: true}] uploaded photos
+// (demo accounts keep uploaded photos as data: URLs).
 export function portfolioOf(user) {
   return (Array.isArray(user?.portfolio) ? user.portfolio : []).map((p) => {
     if (typeof p === 'string') {
       const url = safeUrl(p);
       return url ? { label: 'Past work', url, image: /images\.unsplash\.com|\.(png|jpe?g|webp|gif)(\?|$)/i.test(url) } : null;
     }
-    const url = safeUrl(p?.url);
-    return url ? { label: String(p.label || 'Past work').slice(0, 60), url, image: false } : null;
+    const photo = !!p?.photo;
+    const url = photo && /^data:image\/(jpeg|png|webp);base64,/.test(String(p.url || '')) ? p.url : safeUrl(p?.url);
+    return url ? { label: String(p.label || (photo ? 'Photo' : 'Past work')).slice(0, 60), url, image: photo } : null;
   }).filter(Boolean);
 }
 

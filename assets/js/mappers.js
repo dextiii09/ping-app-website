@@ -34,6 +34,9 @@ export function profileFromRow(r, email) {
     talentType: r.talent_type || (r.role === 'INFLUENCER' ? 'INFLUENCER' : null),
     talentDetails: r.talent_details || {},
     portfolio: r.portfolio || [],
+    handle: r.handle || '',
+    publicKit: !!r.public_kit,
+    blockedDates: Array.isArray(r.blocked_dates) ? r.blocked_dates : [],
     joinedAt: ms(r.joined_at)
   };
   if (email) p.email = email;
@@ -45,7 +48,8 @@ const PROFILE_FIELD_MAP = {
   company: 'company', jobTitle: 'job_title', industry: 'industry', companySize: 'company_size',
   website: 'website', socials: 'socials', socialStats: 'social_stats', stats: 'stats',
   settings: 'settings', docUrl: 'doc_url', verificationStatus: 'verification_status',
-  talentType: 'talent_type', talentDetails: 'talent_details', portfolio: 'portfolio'
+  talentType: 'talent_type', talentDetails: 'talent_details', portfolio: 'portfolio',
+  handle: 'handle', publicKit: 'public_kit', blockedDates: 'blocked_dates'
 };
 
 export function profileFieldsToRow(fields) {

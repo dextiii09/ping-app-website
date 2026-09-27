@@ -35,6 +35,14 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   let reqPath = req.url.split('?')[0];
   if (reqPath === '/' || reqPath === '') reqPath = '/index.html';
+  // Public media kits (pingapp.site/@handle), like the rewrite in vercel.json.
+  const kit = reqPath.match(/^\/(@[A-Za-z0-9._]{3,30})(\/?)$/);
+  if (kit && kit[2]) {
+    res.writeHead(308, { Location: `/${kit[1]}` });
+    res.end();
+    return;
+  }
+  if (kit) reqPath = '/index.html';
 
   const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
   let filePath = path.join(__dirname, safePath);

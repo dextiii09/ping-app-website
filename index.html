@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <!-- Stamped on every commit (git pre-commit hook); see assets/js/updater.js -->
-    <meta name="ping-version" content="20260926113504">
+    <meta name="ping-version" content="20260927074609">
     <title>Ping · Local brands. Local creators. One ping apart.</title>
     <meta name="theme-color" content="#0a0a0a">
 
@@ -207,8 +207,18 @@
             return null;
         }
 
+        // A creator's public media kit (pingapp.site/@handle) is shown to
+        // everyone, signed in or not, instead of the landing page or the app.
+        const kitRoute = window.location.pathname.match(/^\/@([A-Za-z0-9._]{3,30})\/?$/);
+
         document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.add('pre-auth');
+
+            if (kitRoute) {
+                import('./assets/js/views/publicKitView.js')
+                    .then(({ renderPublicKit }) => renderPublicKit(document.getElementById('authGateRoot'), kitRoute[1].toLowerCase()));
+                return;
+            }
 
             onAuthChange(async (user) => {
                 // Arrived from a password-reset link: ask for a new password

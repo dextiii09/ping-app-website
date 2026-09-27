@@ -49,6 +49,20 @@ export function subscribeToApplications(callback) {
   return watchTable('brief_applications', refetch);
 }
 
+// Free/busy for creators who applied to your campaigns: booked campaign dates
+// and days they marked unavailable (talent_busy_windows() in media_kit.sql).
+// Resolves { creatorId: [{ start, end, kind }] }.
+export async function fetchBusyWindows(creatorIds) {
+  const { data, error } = await supabase.rpc('talent_busy_windows', { p_creators: creatorIds });
+  if (error) throw error;
+  const day = (v) => { const [y, m, d] = String(v).split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+  const out = {};
+  (data || []).forEach((r) => {
+    (out[r.creator_id] = out[r.creator_id] || []).push({ start: day(r.starts_on), end: day(r.ends_on), kind: r.kind });
+  });
+  return out;
+}
+
 // The brand's Connect / Pass (see decide_application() in campaign_matching.sql).
 export async function decideApplicationRemote(briefId, creatorId, decision, confirmConflict = false) {
   const { data, error } = await supabase.rpc('decide_application', {

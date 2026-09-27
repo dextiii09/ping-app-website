@@ -4,8 +4,9 @@
 // Talent can apply to as many briefs as they like.
 import { store } from '../state.js';
 import { escapeHtml } from '../domUtils.js';
-import { talentMeta, talentTypeOf, talentBadge } from '../talentTypes.js';
+import { talentMeta, talentTypeOf, talentBadge, briefFitsTalent } from '../talentTypes.js';
 import { formatWindow, dueLabel, slotsLeft, sameCity, greeting, greetName } from '../campaignUtils.js';
+import { brandSheetHtml } from './brandSheet.js';
 
 export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat, onNavigate, focusBriefId = null } = {}) {
   let niche = 'ALL';
@@ -82,24 +83,30 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
     }
   }
 
+  // The button or status for a brief (on its card and in the brand's sheet).
+  function actionFor(b) {
+    const app = store.getApplication(b.id);
+    if (!app && !briefFitsTalent(b.talentType, talentTypeOf(store.currentUser))) return `<span class="cm-pill">For ${escapeHtml(talentMeta(b.talentType).plural)}</span>`;
+    if (!app && clashesFor(b).length) return '<span class="cm-pill is-no"><i class="ph-bold ph-calendar-x"></i> Date clash</span>';
+    if (!app) return `<button class="btn-gold" data-apply="${escapeHtml(b.id)}">Apply</button>`;
+    if (app.status === 'PENDING') return '<span class="cm-pill is-wait"><i class="ph-bold ph-hourglass"></i> Applied</span>';
+    if (app.status === 'SELECTED') return `<button class="btn-gold" data-chat="${escapeHtml(b.brandId)}"><i class="ph-bold ph-chat-circle-text"></i> Connected · Chat</button>`;
+    return '<span class="cm-pill is-no">Not selected</span>';
+  }
+
   function briefCard(b) {
     const me = store.currentUser;
     const app = store.getApplication(b.id);
     const clashes = clashesFor(b);
     const left = slotsLeft(b);
-    let action;
-    if (!app && clashes.length) action = '<span class="cm-pill is-no"><i class="ph-bold ph-calendar-x"></i> Date clash</span>';
-    else if (!app) action = `<button class="btn-gold" data-apply="${escapeHtml(b.id)}">Apply</button>`;
-    else if (app.status === 'PENDING') action = '<span class="cm-pill is-wait"><i class="ph-bold ph-hourglass"></i> Applied</span>';
-    else if (app.status === 'SELECTED') action = `<button class="btn-gold" data-chat="${escapeHtml(b.brandId)}"><i class="ph-bold ph-chat-circle-text"></i> Connected · Chat</button>`;
-    else action = '<span class="cm-pill is-no">Not selected</span>';
+    const action = actionFor(b);
 
     return `
       <article class="cm-brief" data-brief="${escapeHtml(b.id)}">
         <header class="cm-brief-brand">
-          <img src="${escapeHtml(b.brandAvatar)}" alt="">
+          <img src="${escapeHtml(b.brandAvatar)}" alt="" data-brand="${escapeHtml(b.brandId)}">
           <div>
-            <b>${escapeHtml(b.brandName)}</b>
+            <button type="button" class="cm-brand-link" data-brand="${escapeHtml(b.brandId)}" title="About ${escapeHtml(b.brandName)}">${escapeHtml(b.brandName)}<i class="ph-bold ph-caret-right"></i></button>
             <span><i class="ph-fill ph-map-pin"></i>${escapeHtml(b.location || '')}${sameCity(b.location, me.location) ? '<em>Near you</em>' : ''}</span>
           </div>
           ${b.isDemo ? '<span class="cm-demo">Demo</span>' : ''}
@@ -121,6 +128,13 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
           ${action}
         </footer>
       </article>`;
+  }
+
+  // ─── Brand profile ───────────────────────────────────────────────────────
+
+  function openBrand(brandId) {
+    const html = brandSheetHtml(brandId, { actionFor });
+    if (html) layer.innerHTML = html;
   }
 
   // ─── Apply ───────────────────────────────────────────────────────────────
@@ -195,6 +209,8 @@ export function renderOpportunitiesPlatform(container, { onShowToast, onOpenChat
 
   function onClick(e) {
     const t = e.target;
+    const brand = t.closest('[data-brand]');
+    if (brand) { openBrand(brand.getAttribute('data-brand')); return; }
     const apply = t.closest('[data-apply]');
     if (apply) { openApply(apply.getAttribute('data-apply')); return; }
     const chat = t.closest('[data-chat]');

@@ -2,6 +2,7 @@
 import { SEED_USERS, SEED_BRIEFS, SEED_MATCHES, SEED_APPLICATIONS } from './mockData.js';
 import { briefWindow, windowsOverlap, formatWindow, formatINR, dateOnlyMs, campaignStatus, sameCity, selectedNote } from './campaignUtils.js';
 import { talentTypeOf, briefFitsTalent } from './talentTypes.js';
+import { blockedWindows } from './availability.js';
 
 const STORAGE_KEY = 'ping_platform_state_v1';
 // Bumped when the cached shape changes (v2: campaign matching flow), so an
@@ -678,6 +679,51 @@ class StateStore {
     const url = await uploadAvatar(this.currentUser.id, blob);
     await this.updateCurrentUserProfile({ avatar: url });
     removeAvatarFile(this.currentUser.id, previous).catch(() => {});
+  }
+
+  // A photo of past work: uploaded straight away (real accounts) so the member
+  // sees it, and kept in their profile only when they save. Demo accounts keep
+  // a small data: URL instead.
+  async uploadWorkPhoto(file) {
+    const { toPhotoJpeg, blobToDataUrl } = await import('./imageUtils.js');
+    if (!this.isRealAccount) return blobToDataUrl(await toPhotoJpeg(file, 640, 0.75)); // small: kept in localStorage
+    const blob = await toPhotoJpeg(file);
+    const { uploadWorkPhoto } = await import('./authService.js');
+    return uploadWorkPhoto(this.currentUser.id, blob);
+  }
+
+  // Best-effort clean-up of photo files that are no longer used.
+  async removeWorkPhotos(urls) {
+    if (!this.isRealAccount || !urls.length) return;
+    const { removeAvatarFile } = await import('./authService.js');
+    urls.forEach((u) => { removeAvatarFile(this.currentUser.id, u).catch(() => {}); });
+  }
+
+  // Free/busy for creators (a brand looking at applicants): booked campaign
+  // dates and days they marked unavailable. { creatorId: [{start, end, kind}] }
+  async getBusyWindows(creatorIds) {
+    const ids = [...new Set(creatorIds)].filter(Boolean);
+    if (!ids.length) return {};
+    if (this.isRealAccount) {
+      try {
+        const { fetchBusyWindows } = await import('./briefsService.js');
+        return await fetchBusyWindows(ids);
+      } catch (err) {
+        console.warn('Availability not loaded (run supabase/media_kit.sql?):', err?.message || err);
+        return {};
+      }
+    }
+    const out = {};
+    ids.forEach((id) => {
+      const booked = this.applications
+        .filter(a => a.creatorId === id && a.status === 'SELECTED')
+        .map(a => this.briefs.find(b => b.id === a.briefId) || a.brief)
+        .filter(Boolean)
+        .map((b) => { const [start, end] = briefWindow(b); return { start, end, kind: 'booked' }; });
+      const user = this.users.find(u => u.id === id);
+      out[id] = [...booked, ...blockedWindows(user?.blockedDates)];
+    });
+    return out;
   }
 
   // Ask the Ping team to verify this profile (UNVERIFIED/REJECTED -> PENDING,
