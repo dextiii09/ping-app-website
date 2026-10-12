@@ -27,6 +27,11 @@ const MONO = '500 10.5px "Geist Mono", ui-monospace, SFMono-Regular, Menlo, mono
 const TAU = Math.PI * 2;
 const NODE_DEPTH = 1.35; // nodes drift a little more than streets = depth
 
+// While the page scrolls, maps hold their last frame, so the scroll gets the
+// whole frame budget; they carry on a moment after it stops.
+let scrollingUntil = 0;
+window.addEventListener('scroll', () => { scrollingUntil = performance.now() + 180; }, { passive: true });
+
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -105,7 +110,15 @@ export class PingMap {
     let resizeTimer = 0;
     this.handleResize = () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (!this.destroyed) { this.fadeFrom = null; this.build(); } }, 160);
+      resizeTimer = setTimeout(() => {
+        if (this.destroyed) return;
+        // Phones fire resize when the address bar slides in or out while
+        // scrolling; the map's own size doesn't change, so nothing to redo.
+        const r = this.canvas.getBoundingClientRect();
+        if (Math.round(r.width) === this.W && Math.round(r.height) === this.H && this.dpr === this.pickDpr()) return;
+        this.endFade();
+        this.build();
+      }, 160);
     };
     this.handleVisibility = () => { this.pageVisible = !document.hidden; this.toggleLoop(); };
 
@@ -117,6 +130,10 @@ export class PingMap {
     }
     if (this.o.interactive) this.bindPointer();
 
+    // The streets live on their own canvas just under this one (newLayer),
+    // so this one must be positioned to stay on top of it.
+    if (getComputedStyle(canvas).position === 'static') canvas.style.position = 'relative';
+
     this.build();
     // Labels use the web font; repaint the static version once it's ready.
     if (document.fonts && document.fonts.ready) {
@@ -127,11 +144,19 @@ export class PingMap {
 
   // ─── Setup ────────────────────────────────────────────────────────────────
 
+  // Big maps (the full-screen hero) draw at up to 1.5x on high-resolution
+  // screens: about half the pixels of 2x per frame, still crisp for thin
+  // lines. Smaller maps keep 2x.
+  pickDpr() {
+    const cap = this.W * this.H > 900000 ? 1.5 : 2;
+    return Math.min(window.devicePixelRatio || 1, cap);
+  }
+
   build() {
     const rect = this.canvas.getBoundingClientRect();
     this.W = Math.max(1, Math.round(rect.width));
     this.H = Math.max(1, Math.round(rect.height));
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.dpr = this.pickDpr();
     this.canvas.width = Math.round(this.W * this.dpr);
     this.canvas.height = Math.round(this.H * this.dpr);
     this.narrow = this.W < 900;
@@ -157,13 +182,65 @@ export class PingMap {
     this.draw(performance.now());
   }
 
+  // ─── Street layer ─────────────────────────────────────────────────────────
+  // The streets are drawn once per build onto their own canvas, placed just
+  // under the map canvas and moved with CSS for the pointer parallax. Each
+  // frame then only redraws the radar, dots and labels, instead of copying a
+  // screen-sized image of the streets 60 times a second.
+
+  newLayer() {
+    const layer = document.createElement('canvas');
+    layer.className = 'ping-map-streets';
+    layer.setAttribute('aria-hidden', 'true');
+    layer.style.cssText = 'position:absolute;pointer-events:none;visibility:hidden';
+    this.canvas.parentNode.insertBefore(layer, this.canvas);
+    this.layerShown = false;
+    return layer;
+  }
+
+  // Same box as the map canvas plus the parallax margin on every side.
+  placeLayer(layer) {
+    const pad = this.pad;
+    layer.style.left = `${this.canvas.offsetLeft - pad}px`;
+    layer.style.top = `${this.canvas.offsetTop - pad}px`;
+    layer.style.width = `${this.W + pad * 2}px`;
+    layer.style.height = `${this.H + pad * 2}px`;
+    this.layerAt = null;
+  }
+
+  // Shown once the city is built (during the build-in the streets are drawn
+  // into the map canvas, clipped to the growing circle).
+  showLayer(on) {
+    if (!this.streets || this.layerShown === on) return;
+    this.layerShown = on;
+    this.streets.style.visibility = on ? '' : 'hidden';
+  }
+
+  moveLayers() {
+    const x = Math.round(this.par.x * 10) / 10;
+    const y = Math.round(this.par.y * 10) / 10;
+    if (this.layerAt && this.layerAt.x === x && this.layerAt.y === y) return;
+    this.layerAt = { x, y };
+    const t = `translate3d(${x}px, ${y}px, 0)`;
+    this.streets.style.transform = t;
+    if (this.fadeFrom) this.fadeFrom.style.transform = t;
+  }
+
+  // Finish a cross-fade straight away (resize, destroy).
+  endFade() {
+    if (this.fadeFrom) this.fadeFrom.remove();
+    this.fadeFrom = null;
+    if (this.streets && this.streets.getAnimations) this.streets.getAnimations().forEach((a) => a.finish());
+  }
+
   buildStreets() {
     const pad = (this.pad = 48);
     const w = this.W + pad * 2;
     const h = this.H + pad * 2;
-    const off = this.streets || (this.streets = document.createElement('canvas'));
+    const off = this.streets || (this.streets = this.newLayer());
     off.width = Math.round(w * this.dpr);
     off.height = Math.round(h * this.dpr);
+    this.placeLayer(off);
     const g = off.getContext('2d');
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     g.clearRect(0, 0, w, h);
@@ -305,15 +382,20 @@ export class PingMap {
 
   // Real streets (landing/realMap.js, in metres around home), drawn in the
   // invented city's style. Each tile is clipped to its own square, so shapes
-  // repeated in a neighbouring tile's margin aren't painted twice. A fresh
-  // canvas each time: a cross-fade may still be showing the previous one.
+  // repeated in a neighbouring tile's margin aren't painted twice. A new
+  // layer when cross-fading (useGeo), so the old streets stay on screen.
   buildRealStreets() {
     const pad = (this.pad = 48);
     const w = this.W + pad * 2;
     const h = this.H + pad * 2;
-    const off = (this.streets = document.createElement('canvas'));
+    if (!this.streets || this.freshLayer) {
+      this.streets = this.newLayer();
+      this.freshLayer = false;
+    }
+    const off = this.streets;
     off.width = Math.round(w * this.dpr);
     off.height = Math.round(h * this.dpr);
+    this.placeLayer(off);
     const g = off.getContext('2d');
     const m = this.mpp();
     g.setTransform(this.dpr / m, 0, 0, this.dpr / m, (this.hx + pad) * this.dpr, (this.hy + pad) * this.dpr);
@@ -365,10 +447,23 @@ export class PingMap {
   useGeo(area, { homeLabel } = {}) {
     if (this.destroyed || !area) return;
     if (homeLabel) this.o.homeLabel = homeLabel;
-    this.fadeFrom = !this.building && !this.reduced && this.streets ? this.streets : null;
+    this.endFade();
+    const old = !this.building && !this.reduced && this.streets ? this.streets : null;
+    this.freshLayer = !!old;
+    this.fadeFrom = old;
     this.fadeStart = performance.now();
     this.geo = area;
     this.build();
+    if (!old) return;
+    // The new streets fade in over the old ones (on the compositor), then
+    // the old layer goes.
+    const layer = this.streets;
+    layer.style.visibility = '';
+    this.layerShown = true;
+    this.layerAt = null;
+    const done = () => { if (this.fadeFrom === old) this.fadeFrom = null; old.remove(); };
+    if (layer.animate) layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1100, easing: 'ease-in-out' }).finished.then(done, done);
+    else done();
   }
 
   avoidRects() {
@@ -690,24 +785,24 @@ export class PingMap {
     const reveal = this.revealRadius(now);
     const ox = this.par.x * NODE_DEPTH;
     const oy = this.par.y * NODE_DEPTH;
-    // Real streets arriving over the invented city cross-fade in (useGeo).
+    // Dots fade in with new real streets (the street layers fade by
+    // themselves, see useGeo).
     const swap = this.fadeFrom ? easeInOut(clamp((now - this.fadeStart) / 1100, 0, 1)) : 1;
-    if (swap >= 1) this.fadeFrom = null;
     if (reveal === Infinity) {
-      if (this.fadeFrom) {
-        ctx.globalAlpha = 1 - swap;
-        ctx.drawImage(this.fadeFrom, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
-        ctx.globalAlpha = swap;
+      // Built: the streets are on their own layer; just keep it in step
+      // with the parallax.
+      this.showLayer(true);
+      this.moveLayers();
+    } else {
+      this.showLayer(false);
+      if (reveal > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(hx + ox, hy + oy, reveal, 0, TAU);
+        ctx.clip();
+        ctx.drawImage(this.streets, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
+        ctx.restore();
       }
-      ctx.drawImage(this.streets, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
-      ctx.globalAlpha = 1;
-    } else if (reveal > 0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(hx + ox, hy + oy, reveal, 0, TAU);
-      ctx.clip();
-      ctx.drawImage(this.streets, -this.pad + this.par.x, -this.pad + this.par.y, W + this.pad * 2, H + this.pad * 2);
-      ctx.restore();
     }
 
     ctx.save();
@@ -755,8 +850,12 @@ export class PingMap {
         grad.addColorStop(k, `rgba(${LIME},0)`);
         grad.addColorStop(1, `rgba(${LIME},0)`);
         ctx.fillStyle = grad;
+        // Only the wedge is visible, so fill just the wedge (not the whole
+        // circle): about a seventh of the pixels, every frame.
         ctx.beginPath();
-        ctx.arc(hx, hy, R, 0, TAU);
+        ctx.moveTo(hx, hy);
+        ctx.arc(hx, hy, R, this.sweep - wedge, this.sweep);
+        ctx.closePath();
         ctx.fill();
       }
       ctx.strokeStyle = `rgba(${LIME},0.32)`;
@@ -923,6 +1022,12 @@ export class PingMap {
   }
 
   loop(now) {
+    if (now < scrollingUntil) {
+      // Hold the last frame while the page scrolls (see scrollingUntil).
+      this.last = now;
+      this.raf = requestAnimationFrame(this.loop);
+      return;
+    }
     const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
     this.last = now;
     this.update(now, dt);
@@ -934,6 +1039,8 @@ export class PingMap {
     this.destroyed = true;
     if (this.raf) cancelAnimationFrame(this.raf);
     this.raf = 0;
+    this.endFade();
+    if (this.streets) this.streets.remove();
     window.removeEventListener('resize', this.handleResize);
     document.removeEventListener('visibilitychange', this.handleVisibility);
     if (this.io) this.io.disconnect();

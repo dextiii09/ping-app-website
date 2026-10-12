@@ -125,6 +125,8 @@ export class RouteLine {
     this.enabled = true;
     this.svg.style.display = '';
     const mainRect = this.main.getBoundingClientRect();
+    // Where main starts on the page, so scrolling needs no layout reads.
+    this.mainDocTop = mainRect.top + window.scrollY;
     const W = this.main.clientWidth;
     const H = this.main.scrollHeight;
     this.svg.setAttribute('width', W);
@@ -215,7 +217,9 @@ export class RouteLine {
 
   update() {
     if (!this.enabled) return;
-    const mainTop = this.main.getBoundingClientRect().top;
+    // From the position saved in build(): reading a layout box here on every
+    // scroll frame would force the browser to lay the page out mid-scroll.
+    const mainTop = this.mainDocTop - window.scrollY;
     const targetY = window.innerHeight * 0.62 - mainTop;
     const lens = {};
     for (const key of ['main', 'a', 'b']) {
