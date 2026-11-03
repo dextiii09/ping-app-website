@@ -3,6 +3,7 @@
 // sent to can accept or decline it. There is no in-app signing, escrow or
 // payment; payment is arranged between the two sides.
 import { store } from '../state.js';
+import { supabase } from '../supabaseClient.js';
 import { aiService } from '../aiService.js';
 import { escapeHtml } from '../domUtils.js';
 import { displayPingScore } from '../pingScoreService.js';
@@ -302,6 +303,11 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
             </div>
             <p class="deal-proposal-hint">Accepting records that you both agree to these terms. Payment is arranged between you, outside Ping.</p>
           ` : ''}
+          ${status === 'ACCEPTED' ? `
+            <div class="deal-proposal-actions">
+              <button class="btn-glass" data-download-agreement="${escapeHtml(msg.id)}">Download accepted proposal</button>
+            </div>
+          ` : ''}
           <div class="deal-proposal-foot">${from}${msg.timestamp ? ` · ${formatTime(msg.timestamp)}` : ''}</div>
         </div>
       `;
@@ -404,6 +410,56 @@ export function renderDealRoomPlatform(container, initialMatchId = null, onShowT
         scrollToBottom();
       };
     }
+
+    container.querySelectorAll('[data-download-agreement]').forEach(button => {
+      button.onclick = async () => {
+        const message = activeMatch?.messages?.find(item => item.id === button.dataset.downloadAgreement);
+        const proposal = message?.proposalData;
+        if (proposal?.status !== 'ACCEPTED') return;
+
+        let agreement = null;
+        if (store.isRealAccount && proposal.id) {
+          button.disabled = true;
+          try {
+            const { data, error } = await supabase.from('deal_agreements')
+              .select('terms, accepted_at, sender_id, receiver_id')
+              .eq('proposal_id', proposal.id)
+              .maybeSingle();
+            if (error) {
+              onShowToast('Could not load the accepted agreement. Please try again.');
+              return;
+            }
+            agreement = data;
+          } finally {
+            button.disabled = false;
+          }
+        }
+        const terms = agreement?.terms ?? proposal;
+        const lines = [
+          'Ping · Accepted Smart Proposal',
+          '',
+          terms.title,
+          `Budget: ${terms.price}`,
+          `Deadline: ${terms.deadline}`,
+          '',
+          terms.description || '',
+          '',
+          ...(agreement ? [
+            `Offered at: ${terms.offered_at}`,
+            `Accepted at: ${agreement.accepted_at}`,
+            `Offered by account: ${agreement.sender_id}`,
+            `Accepted by account: ${agreement.receiver_id}`,
+          ] : ['Acceptance timestamp unavailable.']),
+          `Proposal reference: ${proposal.id || message.id}`
+        ];
+        const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'ping-accepted-proposal.txt';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      };
+    });
 
     // Accept / decline a proposal sent to you
     container.querySelectorAll('[data-prop-reply]').forEach(btn => {
