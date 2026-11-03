@@ -4,6 +4,7 @@
 // photos of past work, audience numbers labelled as self-reported, and a
 // save bar that appears as soon as something changes.
 import { store } from '../state.js';
+import { supabase } from '../supabaseClient.js';
 import { NICHE_TAGS } from '../mockData.js';
 import { aiService } from '../aiService.js';
 import { detectLocation } from '../geoService.js';
@@ -395,7 +396,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                   <div><label for="inputStatIg">Instagram followers</label><input type="text" id="inputStatIg" value="${escapeHtml(cleanStat(s.instagramFollowers))}" placeholder="e.g. 32K" maxlength="20"></div>
                   <div><label for="inputStatReels">Avg Reel views</label><input type="text" id="inputStatReels" value="${escapeHtml(cleanStat(s.avgReelViews))}" placeholder="e.g. 12K" maxlength="20"></div>
                   <div><label for="inputStatEng">Avg engagement</label><input type="text" id="inputStatEng" value="${escapeHtml(cleanStat(s.avgEngagement))}" placeholder="e.g. 6.8%" maxlength="10"></div>
-                  <div><label for="inputStatYt">YouTube subscribers</label><input type="text" id="inputStatYt" value="${escapeHtml(cleanStat(s.youtubeSubscribers))}" placeholder="e.g. 4K" maxlength="20"></div>
+                  <div><label for="inputStatYt">YouTube subscribers</label><input type="text" id="inputStatYt" value="${escapeHtml(cleanStat(s.youtubeSubscribers))}" placeholder="e.g. 4K" maxlength="20"><button type="button" class="btn-glass" id="mkFetchYoutube">Fetch public count</button></div>
                 </div>
               </div>
 
@@ -731,6 +732,37 @@ export function renderMediaKitPlatform(container, onShowToast) {
   }
 
   function bindEvents() {
+    const fetchYoutube = container.querySelector('#mkFetchYoutube');
+    if (fetchYoutube) {
+      fetchYoutube.onclick = async () => {
+        const channelInput = container.querySelector('#inputSocialYoutube');
+        const countInput = container.querySelector('#inputStatYt');
+        const channel = channelInput.value.trim();
+        if (!channel) {
+          onShowToast('Enter your YouTube channel first.');
+          channelInput.focus();
+          return;
+        }
+        fetchYoutube.disabled = true;
+        try {
+          const { data, error } = await supabase.functions.invoke('youtube-channel-stats', { body: { channel } });
+          if (!countInput.isConnected || channelInput.value.trim() !== channel) return;
+          if (error) {
+            onShowToast('Could not fetch YouTube stats. Check the channel and try again.');
+            return;
+          }
+          if (data?.subscribers == null) {
+            onShowToast('This channel has no public subscriber count.');
+            return;
+          }
+          countInput.value = data.subscribers;
+          countInput.dispatchEvent(new Event('input', { bubbles: true }));
+          onShowToast('Subscriber count fetched. Save your Media Kit to keep it.');
+        } finally {
+          fetchYoutube.disabled = false;
+        }
+      };
+    }
     const q = (sel) => container.querySelector(sel);
 
     // Anything typed in the editor is an unsaved change, except file pickers,
