@@ -384,7 +384,11 @@ export function renderMediaKitPlatform(container, onShowToast) {
               <div class="mk-section">
                 <div class="mk-section-title">Social handles</div>
                 <div class="app-cols mk-cols">
-                  <div><label for="inputSocialInstagram">Instagram</label><input type="text" id="inputSocialInstagram" value="${escapeHtml(user.socials?.instagram || '')}" placeholder="@handle" maxlength="100" autocapitalize="off" spellcheck="false"></div>
+                  <div><label for="inputSocialInstagram">Instagram</label><input type="text" id="inputSocialInstagram" value="${escapeHtml(user.socials?.instagram || '')}" placeholder="@handle" maxlength="100" autocapitalize="off" spellcheck="false">${store.isRealAccount && location.origin === 'https://pingapp.site' ? `
+                    <div class="mk-instagram-actions">
+                      <button type="button" class="btn-glass" id="mkConnectInstagram">Connect Instagram</button>
+                      <button type="button" class="btn-glass" id="mkRefreshInstagram" aria-label="Refresh Instagram followers" title="Refresh Instagram followers"><i class="ph-bold ph-arrows-clockwise" aria-hidden="true"></i></button>
+                    </div>` : ''}</div>
                   <div><label for="inputSocialYoutube">YouTube</label><input type="text" id="inputSocialYoutube" value="${escapeHtml(user.socials?.youtube || '')}" placeholder="@channel or link" maxlength="200" autocapitalize="off" spellcheck="false"></div>
                 </div>
               </div>
@@ -732,6 +736,57 @@ export function renderMediaKitPlatform(container, onShowToast) {
   }
 
   function bindEvents() {
+    const connectInstagram = container.querySelector('#mkConnectInstagram');
+    if (connectInstagram) {
+      const refreshInstagram = container.querySelector('#mkRefreshInstagram');
+      refreshInstagram.onclick = async () => {
+        if (dirty || uploading) {
+          onShowToast('Save your Media Kit edits before refreshing Instagram.');
+          return;
+        }
+        refreshInstagram.disabled = true;
+        connectInstagram.disabled = true;
+        try {
+          const { data, error } = await supabase.functions.invoke('instagram-media-kit', { body: { action: 'refresh' } });
+          if (error) throw error;
+          if (data?.reconnect) {
+            onShowToast('Connect Instagram to refresh your follower count.');
+            connectInstagram.focus();
+            return;
+          }
+          if (!data?.connected) throw new Error('Instagram unavailable');
+          if (!refreshInstagram.isConnected) return;
+          const instagramInput = container.querySelector('#inputSocialInstagram');
+          const followersInput = container.querySelector('#inputStatIg');
+          if (instagramInput.value.trim() === (user.socials?.instagram || '')) instagramInput.value = data.username;
+          if (followersInput.value.trim() === cleanStat(user.socialStats?.instagramFollowers)) followersInput.value = data.followers;
+          user.socials = { ...user.socials, instagram: data.username };
+          user.socialStats = { ...user.socialStats, instagramFollowers: String(data.followers), updatedAt: data.updatedAt };
+          onShowToast('Instagram follower count updated.');
+        } catch {
+          onShowToast('Could not refresh Instagram. Please try again.');
+        } finally {
+          refreshInstagram.disabled = false;
+          connectInstagram.disabled = false;
+        }
+      };
+      connectInstagram.onclick = async () => {
+        if ((dirty || uploading) && !window.confirm('Continue to Instagram without saving your Media Kit edits?')) return;
+        connectInstagram.disabled = true;
+        try {
+          const { data, error } = await supabase.functions.invoke('instagram-media-kit', { body: { action: 'start' } });
+          if (error || !data?.url || !data.state) throw new Error('Instagram unavailable');
+          if (!connectInstagram.isConnected) return;
+          sessionStorage.setItem('ping_instagram_state', data.state);
+          setDirty(false);
+          location.assign(data.url);
+        } catch {
+          onShowToast('Could not open Instagram. Please try again.');
+        } finally {
+          connectInstagram.disabled = false;
+        }
+      };
+    }
     const fetchYoutube = container.querySelector('#mkFetchYoutube');
     if (fetchYoutube) {
       fetchYoutube.onclick = async () => {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <!-- Stamped on every commit (git pre-commit hook); see assets/js/updater.js -->
-    <meta name="ping-version" content="20261103170116">
+    <meta name="ping-version" content="20261104040123">
     <title>Ping · Local brands. Local creators. One ping apart.</title>
     <meta name="theme-color" content="#0a0a0a">
 
@@ -175,6 +175,13 @@
             document.getElementById('authGateRoot').innerHTML = '';
             platform.init();
             window.pingPlatform = platform;
+            try {
+                const instagramResult = sessionStorage.getItem('ping_instagram_result');
+                sessionStorage.removeItem('ping_instagram_result');
+                if (instagramResult === 'connected') platform.showToast('Instagram stats saved to your Media Kit.');
+                if (instagramResult === 'cancelled') platform.showToast('Instagram connection cancelled.');
+                if (instagramResult === 'failed') platform.showToast('Could not connect Instagram. Please try again.');
+            } catch (err) { /* Browser storage may be unavailable. */ }
         }
 
         // A suspended member (status BANNED, set from Operations) gets this
