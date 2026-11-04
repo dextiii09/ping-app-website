@@ -317,6 +317,32 @@ html.lenis, html.lenis body { height: auto; }
 .lp-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: clamp(24px, 4vw, 64px); margin-top: clamp(32px, 4.4vw, 56px); }
 .lp-hero-sub { max-width: 430px; font-size: clamp(16px, 1.2vw, 18px); line-height: 1.6; color: var(--lp-muted); }
 .lp-hero-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; }
+.lp-hero-signup { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-hero-join {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--lp-lime);
+  border-radius: 8px;
+  background: var(--lp-lime);
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.lp-hero-join:hover { background: #f0ff6b; }
+.lp-hero-join:focus-visible { outline: 2px solid var(--lp-lime); outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .lp-hero-join {
+    transition: transform 160ms ease-out, background-color 160ms ease-out, border-color 160ms ease-out;
+  }
+  @media (hover: hover) {
+    .lp-hero-join:hover { transform: translateY(-2px); }
+  }
+  .lp-hero-join:active { transform: scale(0.97); }
+}
 .lp-hero-foot {
   position: absolute;
   left: 0;
@@ -656,7 +682,7 @@ html.lenis, html.lenis body { height: auto; }
 .brief-top { display: flex; align-items: center; gap: 12px; }
 .brief-top div { flex: 1; display: flex; flex-direction: column; line-height: 1.3; }
 .brief-top b { font-size: 15px; font-weight: 600; }
-.brief-top span { font-size: 12px; color: var(--lp-muted); }
+.brief-top div span { font-size: 12px; color: var(--lp-muted); }
 .brief-av { flex: none; width: 42px; height: 42px; border-radius: 12px; background-size: cover; background-position: center; }
 .brief-budget { flex: none; padding: 5px 10px; border-radius: 999px; background: var(--lp-lime); font-family: var(--lp-mono); font-size: 11.5px; color: #0a0a0a; }
 .brief p { font-size: 13px; line-height: 1.5; color: var(--lp-muted); }
@@ -1046,6 +1072,7 @@ html.lenis, html.lenis body { height: auto; }
 .auth-step-label { display: inline-flex; align-items: center; gap: 7px; font-family: var(--lp-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lp-dim); white-space: nowrap; }
 .auth-step-label b, .auth-step-label i { display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--lp-line-2); border-radius: 50%; font-size: 10px; font-weight: 500; }
 .auth-step.is-current .auth-step-label { color: var(--lp-ink); }
+.auth-step:not(.is-current) .auth-step-label { color: #b8b8b8; }
 .auth-step.is-current .auth-step-label b { border-color: var(--lp-lime); color: var(--lp-lime); }
 .auth-step.is-done .auth-step-label { color: var(--lp-muted); }
 .auth-step.is-done .auth-step-label i { border-color: var(--lp-lime); background: var(--lp-lime); color: #0a0a0a; }
@@ -1087,7 +1114,7 @@ html.lenis, html.lenis body { height: auto; }
   outline: none;
   transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
 }
-.auth-input::placeholder { color: var(--lp-dim); }
+.auth-input::placeholder { color: #a6a6a6; opacity: 1; }
 .auth-input:hover { border-color: rgba(255, 255, 255, 0.25); }
 .auth-input:focus { border-color: rgba(230, 255, 26, 0.7); background: rgba(255, 255, 255, 0.045); box-shadow: 0 0 0 4px rgba(230, 255, 26, 0.1); }
 .auth-input:-webkit-autofill { -webkit-text-fill-color: var(--lp-ink); -webkit-box-shadow: 0 0 0 40px #161614 inset; caret-color: var(--lp-ink); }
@@ -1122,7 +1149,7 @@ html.lenis, html.lenis body { height: auto; }
 .auth-role > i { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 18px; transition: background-color 0.3s, color 0.3s; }
 .auth-role > span:not(.auth-role-dot) { display: flex; flex-direction: column; line-height: 1.25; }
 .auth-role b { font-size: 15px; font-weight: 600; }
-.auth-role small { font-size: 12px; color: var(--lp-muted); }
+.auth-role small { font-size: 12px; color: #b8b8b8; }
 .auth-role-dot { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; border: 1.5px solid var(--lp-line-2); border-radius: 50%; transition: border-color 0.3s, box-shadow 0.3s; }
 .auth-role:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-1px); }
 .auth-role.is-on { border-color: var(--lp-lime); background: rgba(230, 255, 26, 0.07); }

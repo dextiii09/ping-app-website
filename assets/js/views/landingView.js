@@ -164,7 +164,10 @@ function markup({ skipIntro, touch }) {
           <div class="lp-hero-row">
             <p class="lp-hero-sub">Ping connects neighbourhood businesses with the creators, comedians, DJs and bands their customers already follow. Post a campaign, Connect with who you want, no agency in between.</p>
             <div class="lp-hero-ctas">
-              ${btn('Find your match', { attrs: 'href="#choose" data-scroll="choose"' })}
+              <div class="lp-hero-signup">
+                <a href="#join-creator" class="lp-hero-join" data-role-choice="creator">Join as a creator</a>
+                <a href="#join-brand" class="lp-hero-join" data-role-choice="brand">Join as a brand</a>
+              </div>
               <a href="#how" class="lp-textlink" data-scroll="how">See how it works</a>
             </div>
           </div>
@@ -173,7 +176,7 @@ function markup({ skipIntro, touch }) {
           <span class="lp-scroll-cue"><span class="lp-scroll-line"></span>Scroll</span>
           <span class="lp-hero-where">
             <span class="lp-hero-place" hidden><i class="ph-fill ph-map-pin" aria-hidden="true"></i><span class="lp-place-text" aria-live="polite"></span></span>
-            <span class="lp-hero-hint"><span class="lp-hint-dot"></span>${touch ? 'Tap' : 'Click'} the map to send a ping</span>
+            <span class="lp-hero-hint"><span class="lp-hint-dot"></span>Example matches · ${touch ? 'Tap' : 'Click'} the map to try a ping</span>
           </span>
         </div>
         <p class="lp-map-credit" hidden>${MAP_CREDIT}</p>
@@ -305,7 +308,7 @@ function markup({ skipIntro, touch }) {
               <div class="lp-tile-copy"><h3>Apply in one tap</h3><p>Local brands post campaigns with the fee upfront. Apply to as many as you like.</p></div>
               <div class="lp-tile-visual">
                 <div class="brief">
-                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.brewLab)}></span><div><b>Cold brew launch</b><span>Brew Lab · Food &amp; Café</span></div><span class="brief-budget">₹6,000</span></div>
+                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.brewLab)}></span><div><b>Cold brew launch</b><span>Sample campaign · Brew Lab</span></div><span class="brief-budget">₹6,000</span></div>
                   <p>Looking for two local creators to shoot our new cold brew menu this month. Fixed fee, 1 Reel + 2 Stories.</p>
                   <div class="brief-foot"><span><i class="ph-fill ph-users"></i> 2 slots open</span><span class="brief-pitch"><i class="ph-fill ph-paper-plane-tilt"></i> Apply</span></div>
                 </div>
@@ -342,7 +345,7 @@ function markup({ skipIntro, touch }) {
               <div class="lp-tile-copy"><h3>Post it. Connect with who applied.</h3><p>Set a fixed fee and how many people you need, then tap Connect on the ones you want.</p></div>
               <div class="lp-tile-visual">
                 <div class="brief">
-                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.boutique)}></span><div><b>Festive collection drop</b><span>Hue Boutique · Fashion</span></div><span class="brief-budget">₹8,000</span></div>
+                  <div class="brief-top"><span class="brief-av" ${bg(PHOTOS.boutique)}></span><div><b>Festive collection drop</b><span>Sample campaign · Hue Boutique</span></div><span class="brief-budget">₹8,000</span></div>
                   <div class="pitches">
                     <span class="pitches-label">Applicants</span>
                     <span class="pitch-stack"><span ${bg(PHOTOS.zoya)}></span><span ${bg(PHOTOS.meera)}></span><span ${bg(PHOTOS.kabir)}></span><span ${bg(PHOTOS.arjun)}></span></span>
