@@ -10,11 +10,31 @@ import { statsNote, instagramUrl } from '../profileKit.js';
 import { embedFor, embedCardHtml } from '../embeds.js';
 import { rangeLabel } from '../availability.js';
 
+export function bookingDetailsHtml(profile) {
+  const details = profile.talentDetails || {};
+  const rows = [
+    ['Book me for', details.bookFor],
+    ['Travel', details.travel],
+    ['Languages', details.languages],
+  ].filter(([, value]) => typeof value === 'string' && value.trim());
+  return rows.length ? `<dl class="talent-booking-details">${rows.map(([label, value]) =>
+    `<div><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>` : '';
+}
+
+export function featuredWorkHtml(profile) {
+  const url = safeUrl(profile.talentDetails?.featuredWork);
+  if (!url) return '';
+  const work = { url, label: 'Featured work' };
+  return `<div class="talent-featured-work">${embedFor(url) ? embedCardHtml(work) :
+    `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-up-right" aria-hidden="true"></i> Open featured work</a>`}</div>`;
+}
+
 export function applicantCardHtml(p, { pitch = '', createdAt = 0, armed = false, busy = null, preview = false } = {}) {
   const type = talentTypeOf(p) || 'INFLUENCER';
   const stats = talentHighlights(p);
   const photos = portfolioOf(p).filter((w) => w.image).slice(0, 3);
-  const links = talentLinks(p).slice(0, 4);
+  const featuredUrl = safeUrl(p.talentDetails?.featuredWork);
+  const links = talentLinks(p).filter(l => l.url !== featuredUrl).slice(0, 4);
   const players = links.filter((l) => embedFor(l.url));
   const plain = links.filter((l) => !embedFor(l.url));
   const ig = instagramUrl(p.socials?.instagram);
@@ -34,6 +54,8 @@ export function applicantCardHtml(p, { pitch = '', createdAt = 0, armed = false,
           </div>
         </div>
       </div>
+      ${bookingDetailsHtml(p)}
+      ${featuredWorkHtml(p)}
       ${busy ? `<p class="cm-busy is-${busy.kind}"><i class="ph-fill ph-calendar-x"></i>${busy.kind === 'booked' ? 'Booked on your dates' : 'Marked unavailable on your dates'} · ${escapeHtml(rangeLabel(busy))}</p>` : ''}
       ${stats.length ? `<div class="cm-app-stats">${stats.map((st) => `<div><b>${escapeHtml(st.value)}</b><span>${escapeHtml(st.label)}</span></div>`).join('')}</div>` : ''}
       ${type === 'INFLUENCER' && stats.length ? `<p class="cm-app-note">${escapeHtml(statsNote(p))}${ig ? ` · <a href="${escapeHtml(ig)}" target="_blank" rel="noopener noreferrer">Instagram <i class="ph-bold ph-arrow-up-right"></i></a>` : ''}</p>` : ''}

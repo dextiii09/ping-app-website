@@ -372,6 +372,17 @@ export function renderMediaKitPlatform(container, onShowToast) {
                 <div id="mkTalentFields">${talentFieldsHtml(talentType, draftDetails)}</div>
               </div>
 
+              <div class="mk-section">
+                <div class="mk-section-title">Booking details</div>
+                <div class="app-cols mk-cols">
+                  <div><label for="mkBookFor">Book me for</label><input id="mkBookFor" type="text" maxlength="160" placeholder="e.g. Reels, event hosting, live sets" value="${escapeHtml(draftDetails.bookFor || '')}"></div>
+                  <div><label for="mkTravel">Available to travel to</label><input id="mkTravel" type="text" maxlength="120" placeholder="e.g. Delhi NCR, Chandigarh" value="${escapeHtml(draftDetails.travel || '')}"></div>
+                  <div><label for="mkLanguages">Languages</label><input id="mkLanguages" type="text" maxlength="100" placeholder="e.g. Hindi, Punjabi, English" value="${escapeHtml(draftDetails.languages || '')}"></div>
+                  <div><label for="mkFeaturedWork">Featured work link</label><input id="mkFeaturedWork" type="text" inputmode="url" maxlength="500" placeholder="Paste a link to your best work" value="${escapeHtml(draftDetails.featuredWork || '')}"></div>
+                </div>
+                <p class="mk-section-help">Brands see these details on your profile. They also appear on your public Media Kit if you publish it.</p>
+              </div>
+
               <div class="mk-section" id="mkRates"${talentType !== 'INFLUENCER' ? ' hidden' : ''}>
                 <div class="mk-section-title">Rate card</div>
                 <div class="app-cols mk-cols-3">
@@ -383,13 +394,17 @@ export function renderMediaKitPlatform(container, onShowToast) {
 
               <div class="mk-section">
                 <div class="mk-section-title">Social handles</div>
-                <div class="app-cols mk-cols">
+                <div class="app-cols mk-cols mk-social-fields">
                   <div><label for="inputSocialInstagram">Instagram</label><input type="text" id="inputSocialInstagram" value="${escapeHtml(user.socials?.instagram || '')}" placeholder="@handle" maxlength="100" autocapitalize="off" spellcheck="false">${store.isRealAccount && location.origin === 'https://pingapp.site' ? `
-                    <div class="mk-instagram-actions">
+                    <div class="mk-social-actions">
                       <button type="button" class="btn-glass" id="mkConnectInstagram">Connect Instagram</button>
                       <button type="button" class="btn-glass" id="mkRefreshInstagram" aria-label="Refresh Instagram followers" title="Refresh Instagram followers"><i class="ph-bold ph-arrows-clockwise" aria-hidden="true"></i></button>
                     </div>` : ''}</div>
-                  <div><label for="inputSocialYoutube">YouTube</label><input type="text" id="inputSocialYoutube" value="${escapeHtml(user.socials?.youtube || '')}" placeholder="@channel or link" maxlength="200" autocapitalize="off" spellcheck="false"></div>
+                  <div>
+                    <label for="inputSocialYoutube">YouTube</label>
+                    <input type="text" id="inputSocialYoutube" value="${escapeHtml(user.socials?.youtube || '')}" placeholder="@channel or link" maxlength="200" autocapitalize="off" spellcheck="false">
+                    <div class="mk-social-actions"><button type="button" class="btn-glass" id="mkFetchYoutube">Fetch public count</button></div>
+                  </div>
                 </div>
               </div>
 
@@ -400,7 +415,7 @@ export function renderMediaKitPlatform(container, onShowToast) {
                   <div><label for="inputStatIg">Instagram followers</label><input type="text" id="inputStatIg" value="${escapeHtml(cleanStat(s.instagramFollowers))}" placeholder="e.g. 32K" maxlength="20"></div>
                   <div><label for="inputStatReels">Avg Reel views</label><input type="text" id="inputStatReels" value="${escapeHtml(cleanStat(s.avgReelViews))}" placeholder="e.g. 12K" maxlength="20"></div>
                   <div><label for="inputStatEng">Avg engagement</label><input type="text" id="inputStatEng" value="${escapeHtml(cleanStat(s.avgEngagement))}" placeholder="e.g. 6.8%" maxlength="10"></div>
-                  <div><label for="inputStatYt">YouTube subscribers</label><input type="text" id="inputStatYt" value="${escapeHtml(cleanStat(s.youtubeSubscribers))}" placeholder="e.g. 4K" maxlength="20"><button type="button" class="btn-glass" id="mkFetchYoutube">Fetch public count</button></div>
+                  <div><label for="inputStatYt">YouTube subscribers</label><input type="text" id="inputStatYt" value="${escapeHtml(cleanStat(s.youtubeSubscribers))}" placeholder="e.g. 4K" maxlength="20"></div>
                 </div>
               </div>
 
@@ -561,6 +576,12 @@ export function renderMediaKitPlatform(container, onShowToast) {
       fields.talentType = chosen ? chosen.getAttribute('data-talent-type') : talentTypeOf(user);
       const details = { ...draftDetails };
       let badLink = '';
+      details.bookFor = q('#mkBookFor').value.trim();
+      details.travel = q('#mkTravel').value.trim();
+      details.languages = q('#mkLanguages').value.trim();
+      const featured = q('#mkFeaturedWork').value.trim();
+      details.featuredWork = featured ? safeUrl(featured) : '';
+      if (featured && !details.featuredWork) badLink = featured;
       container.querySelectorAll('[data-td]').forEach((inp) => {
         const v = inp.value.trim();
         if (inp.getAttribute('data-td-url') && v) {

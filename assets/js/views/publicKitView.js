@@ -5,7 +5,8 @@
 import { supabase } from '../supabaseClient.js';
 import { escapeHtml, isPlaceholderAvatar, initialsAvatar } from '../domUtils.js';
 import { NICHE_TAGS } from '../mockData.js';
-import { talentMeta, talentTypeOf, talentHighlights, talentLinks, portfolioOf } from '../talentTypes.js';
+import { talentMeta, talentTypeOf, talentHighlights, talentLinks, portfolioOf, safeUrl } from '../talentTypes.js';
+import { bookingDetailsHtml, featuredWorkHtml } from './profileCards.js';
 import { audienceOf, statsNote, instagramUrl, youtubeUrl, firstName } from '../profileKit.js';
 import { embedFor, embedCardHtml, bindEmbeds } from '../embeds.js';
 import { calendarHtml } from '../availability.js';
@@ -57,7 +58,8 @@ function kitHtml(u, busy) {
   const aud = audienceOf(u);
   const highlights = type === 'INFLUENCER' ? [] : talentHighlights(u);
   const photos = portfolioOf(u).filter((w) => w.image).slice(0, 6);
-  const links = talentLinks(u);
+  const featuredUrl = safeUrl(u.talentDetails?.featuredWork);
+  const links = talentLinks(u).filter(l => l.url !== featuredUrl);
   const players = links.filter((l) => embedFor(l.url));
   const plain = links.filter((l) => !embedFor(l.url));
   const ig = instagramUrl(u.socials.instagram);
@@ -81,6 +83,8 @@ function kitHtml(u, busy) {
     </section>
 
     ${u.bio ? `<p class="pk-bio">${escapeHtml(u.bio)}</p>` : ''}
+    ${bookingDetailsHtml(u)}
+    ${featuredWorkHtml(u)}
 
     ${aud.length ? `
       <section class="pk-section">
